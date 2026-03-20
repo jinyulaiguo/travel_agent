@@ -1,0 +1,13 @@
+{
+  "folders": [
+    {
+      "name": "Root Project",
+      "path": "."
+    },
+    {
+      "name": "Backend Service",
+      "path": "backend"
+    }
+  ],
+  "settings": {}
+}
