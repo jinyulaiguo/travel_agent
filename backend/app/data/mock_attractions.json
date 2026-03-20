@@ -1,0 +1,70 @@
+[
+  {
+    "id": "att_cm_01",
+    "name": { "zh": "双龙寺", "en": "Wat Phra That Doi Suthep" },
+    "city": "清迈",
+    "country_code": "TH",
+    "coordinates": { "lat": 18.8049, "lng": 98.9216 },
+    "suggested_duration_hours": 2.5,
+    "opening_hours": {
+      "mon-sun": { "open": "06:00", "close": "20:00" }
+    },
+    "admission_fee": { "adult": 30, "child": 0, "currency": "THB" },
+    "crowd_index": 4,
+    "attraction_tags": ["文化古迹", "宗教建筑", "地标景点"],
+    "suitable_for": ["家庭出游", "历史爱好者"],
+    "notes": "服装要求得体，需爬300级台阶或乘缆车",
+    "last_updated": "2024-03-01",
+    "data_source": "TripAdvisor"
+  },
+  {
+    "id": "att_cm_02",
+    "name": { "zh": "清迈古城", "en": "Old City Chiang Mai" },
+    "city": "清迈",
+    "country_code": "TH",
+    "coordinates": { "lat": 18.7883, "lng": 98.9853 },
+    "suggested_duration_hours": 4.0,
+    "opening_hours": { "mon-sun": "24 hours" },
+    "admission_fee": { "adult": 0, "child": 0, "currency": "THB" },
+    "crowd_index": 3,
+    "attraction_tags": ["文化古迹", "历史街区"],
+    "suitable_for": ["所有人"],
+    "notes": "适合步行或单车游览，包含多个寺庙",
+    "last_updated": "2024-03-01",
+    "data_source": "Lonely Planet"
+  },
+  {
+    "id": "att_cm_03",
+    "name": { "zh": "宁曼路", "en": "Nimman Road" },
+    "city": "清迈",
+    "country_code": "TH",
+    "coordinates": { "lat": 18.7992, "lng": 98.9682 },
+    "suggested_duration_hours": 3.0,
+    "opening_hours": { "mon-sun": "10:00-22:00" },
+    "admission_fee": { "adult": 0, "child": 0, "currency": "THB" },
+    "crowd_index": 4,
+    "attraction_tags": ["现代都市", "网红打卡", "美食购物"],
+    "suitable_for": ["年轻人", "美食爱好者"],
+    "notes": "咖啡馆和手工艺品店云集",
+    "last_updated": "2024-03-01",
+    "data_source": "马蜂窝"
+  },
+  {
+    "id": "att_bg_01",
+    "name": { "zh": "大皇宫", "en": "Grand Palace" },
+    "city": "曼谷",
+    "country_code": "TH",
+    "coordinates": { "lat": 13.7500, "lng": 100.4913 },
+    "suggested_duration_hours": 3.0,
+    "opening_hours": {
+      "mon-sun": { "open": "08:30", "close": "15:30" }
+    },
+    "admission_fee": { "adult": 500, "child": 0, "currency": "THB" },
+    "crowd_index": 5,
+    "attraction_tags": ["文化古迹", "皇室建筑"],
+    "suitable_for": ["历史爱好者", "初次到访者"],
+    "notes": "严禁短裤背心，建议尽早前往以避开人流",
+    "last_updated": "2024-03-01",
+    "data_source": "官方网站"
+  }
+]

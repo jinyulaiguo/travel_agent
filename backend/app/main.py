@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.api.v1 import planner, intent, flights, destination
+from app.api.v1 import planner, intent, flights, destination, attractions, hotels, daily_schedule, transport
 from app.core.exceptions import BaseAppError
 from app.core.logging import setup_logging
 
@@ -63,6 +63,10 @@ app.include_router(planner.router)
 app.include_router(intent.router)
 app.include_router(flights.router)
 app.include_router(destination.router)
+app.include_router(attractions.router)
+app.include_router(hotels.router, prefix="/api/v1/hotels", tags=["Hotels"])
+app.include_router(daily_schedule.router, prefix="/api/v1/schedules", tags=["Daily Schedule"])
+app.include_router(transport.router, prefix="/api/v1/transport", tags=["Transport"])
 
 @app.get("/")
 async def root():

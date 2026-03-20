@@ -3,9 +3,74 @@ import reactLogo from './assets/react.svg'
 import viteLogo from './assets/vite.svg'
 import heroImg from './assets/hero.png'
 import './App.css'
+import HotelRecommendation from './features/hotel/components/HotelRecommendation'
+import DailySchedule from './features/daily_schedule/components/DailySchedule'
 
 function App() {
   const [count, setCount] = useState(0)
+
+  const mockItinerary = {
+    days: [
+      {
+        day: 1,
+        date: "2026-03-20",
+        total_active_hours: 6.5,
+        has_conflicts: false,
+        items: [
+          {
+            id: "1",
+            type: "attraction",
+            name: "故宫博物院",
+            planned_start_time: "09:00",
+            planned_end_time: "12:00",
+            duration_hours: 3.0,
+            notes: "建议早点出发"
+          },
+          {
+            id: "2",
+            type: "fixed_slot",
+            name: "固定行程：午餐休息",
+            planned_start_time: "12:00",
+            planned_end_time: "13:30",
+            duration_hours: 1.5
+          },
+          {
+            id: "3",
+            type: "attraction",
+            name: "景山公园",
+            planned_start_time: "14:00",
+            planned_end_time: "15:30",
+            duration_hours: 1.5,
+            notes: "俯瞰故宫全景"
+          },
+          {
+            id: "4",
+            type: "buffer",
+            name: "交通/休息",
+            planned_start_time: "15:30",
+            planned_end_time: "16:00",
+            duration_hours: 0.5
+          }
+        ]
+      },
+      {
+        day: 2,
+        date: "2026-03-21",
+        total_active_hours: 4.0,
+        has_conflicts: false,
+        items: [
+          {
+            id: "5",
+            type: "attraction",
+            name: "颐和园",
+            planned_start_time: "09:00",
+            planned_end_time: "13:00",
+            duration_hours: 4.0
+          }
+        ]
+      }
+    ]
+  };
 
   return (
     <>
@@ -31,85 +96,16 @@ function App() {
 
       <div className="ticks"></div>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
+      <section id="daily-schedule-module" style={{ padding: '40px 0' }}>
+        <h2 style={{ textAlign: 'center', marginBottom: '30px' }}>📅 每日行程编排测试</h2>
+        <DailySchedule initialData={mockItinerary as any} />
+      </section>
+
+      <div className="ticks"></div>
+      
+      <section id="hotel-module" style={{ padding: '40px 0' }}>
+        <h2 style={{ textAlign: 'center', marginBottom: '30px' }}>🏨 酒店推荐测试</h2>
+        <HotelRecommendation />
       </section>
 
       <div className="ticks"></div>

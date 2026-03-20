@@ -1,0 +1,339 @@
+:root {
+  --hotel-primary: #1a73e8;
+  --hotel-warning: #f9ab00;
+  --hotel-bg: #f8f9fa;
+  --hotel-card-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.hotel-list-container {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  color: #3c4043;
+}
+
+.area-recommendation {
+  background: linear-gradient(135deg, #e8f0fe 0%, #ffffff 100%);
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #d2e3fc;
+  margin-bottom: 24px;
+}
+
+.area-recommendation h3 {
+  margin: 0 0 8px 0;
+  color: #1967d2;
+}
+
+.selected-hotel-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: var(--hotel-card-shadow);
+  padding: 20px;
+  margin-bottom: 32px;
+  border: 1px solid #e0e0e0;
+  position: relative;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.badge-primary {
+  background: #e8f0fe;
+  color: #1967d2;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.badge-warning {
+  background: #fef7e0;
+  color: #b06000;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+}
+
+.snapshot-time {
+  font-size: 0.75rem;
+  color: #70757a;
+}
+
+.hotel-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.main-info h4 {
+  margin: 0 0 4px 0;
+  font-size: 1.25rem;
+}
+
+.area-text {
+  font-size: 0.9rem;
+  color: #70757a;
+}
+
+.rating {
+  margin-top: 8px;
+}
+
+.score {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #188038;
+}
+
+.price-info {
+  text-align: right;
+}
+
+.price {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #d93025;
+  margin: 0;
+}
+
+.price span {
+  font-size: 0.9rem;
+  color: #70757a;
+  font-weight: normal;
+}
+
+.btn-book {
+  display: inline-block;
+  margin-top: 12px;
+  background: var(--hotel-primary);
+  color: white;
+  padding: 8px 24px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+
+.btn-book:hover {
+  opacity: 0.9;
+}
+
+.amenities {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.amenity-tag {
+  background: #f1f3f4;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: #5f6368;
+}
+
+.rationale-box {
+  background: #f8f9fa;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  margin-bottom: 16px;
+}
+
+.btn-refresh {
+  background: none;
+  border: 1px solid #dadce0;
+  color: #1a73e8;
+  padding: 6px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.btn-refresh:hover {
+  background: #f8fbff;
+}
+
+.alternatives-section h5 {
+  margin: 0 0 16px 0;
+  font-size: 1.1rem;
+}
+
+.alternatives-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.alt-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 12px;
+  transition: transform 0.2s;
+}
+
+.alt-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+}
+
+.alt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.alt-header h6 {
+  margin: 0;
+  font-size: 0.95rem;
+  flex: 1;
+}
+
+.alt-price {
+  font-weight: bold;
+  color: #d93025;
+  font-size: 0.9rem;
+}
+
+.btn-switch {
+  width: 100%;
+  margin-top: 12px;
+  background: white;
+  border: 1px solid #1a73e8;
+  color: #1a73e8;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.disclaimer {
+  margin-top: 40px;
+  font-size: 0.75rem;
+  color: #70757a;
+  text-align: center;
+}
+
+/* Additional styles for Manual Entry and States */
+.manual-entry-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.manual-entry-modal {
+  background: white;
+  padding: 30px;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+
+.manual-entry-modal h4 {
+  margin: 0 0 8px 0;
+  font-size: 1.4rem;
+}
+
+.subtitle {
+  color: #70757a;
+  font-size: 0.9rem;
+  margin-bottom: 24px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #3c4043;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.btn-cancel {
+  background: white;
+  border: 1px solid #dadce0;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn-confirm {
+  background: var(--hotel-primary);
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.hotel-loading, .hotel-error-state {
+  padding: 60px;
+  text-align: center;
+  background: white;
+  border-radius: 12px;
+  margin: 20px;
+}
+
+.hotel-error-state button {
+  margin-top: 20px;
+  background: #1a73e8;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.feature-footer {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.btn-secondary {
+  background: none;
+  border: none;
+  color: #1a73e8;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
