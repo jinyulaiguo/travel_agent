@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.api.v1 import planner, intent
+from app.api.v1 import planner, intent, flights
 from app.core.exceptions import BaseAppError
 from app.core.logging import setup_logging
 
@@ -61,6 +61,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 
 app.include_router(planner.router)
 app.include_router(intent.router)
+app.include_router(flights.router)
 
 @app.get("/")
 async def root():
