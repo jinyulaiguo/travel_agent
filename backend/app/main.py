@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.api.v1 import planner, intent, flights, destination, attractions, hotels, daily_schedule, transport, dining, cost
+from app.api.v1 import planner, intent, flights, destination, attractions, hotels, daily_schedule, transport, dining, cost, itinerary
 from app.core.exceptions import BaseAppError
 from app.core.logging import setup_logging
 
@@ -69,7 +69,7 @@ app.include_router(daily_schedule.router, prefix="/api/v1/schedules", tags=["Dai
 app.include_router(transport.router, prefix="/api/v1/transport", tags=["Transport"])
 app.include_router(dining.router)
 app.include_router(cost.router)
-
+app.include_router(itinerary.router, prefix="/api/v1/itinerary", tags=["Itinerary Output"])
 @app.get("/")
 async def root():
     return {"message": "Travel Agent API is running"}
