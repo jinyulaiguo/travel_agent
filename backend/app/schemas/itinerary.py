@@ -12,17 +12,21 @@ class ItemType(str, Enum):
     TRANSPORT = "transport"
     OTHER = "other"
 
-class ConfidenceLevel(str, Enum):
-    GREEN = "green"   # High confidence
-    YELLOW = "yellow" # Medium confidence
-    BLUE = "blue"     # Low confidence/Estimate
-    GRAY = "gray"     # Unknown
-    ORANGE = "orange" # Warning/Action required
+from app.schemas.confidence import ConfidenceLevel, ConfidenceWrapper
+
+class ItemType(str, Enum):
+    FLIGHT = "flight"
+    TRAIN = "train"
+    HOTEL = "hotel"
+    DINING = "dining"
+    SIGHTSEEING = "sightseeing"
+    TRANSPORT = "transport"
+    OTHER = "other"
 
 class AlternativeOption(BaseModel):
     id: str = Field(..., description="Unique ID for the alternative option")
     name: str = Field(..., description="Name or title of the alternative")
-    cost_estimate: Optional[float] = Field(None, description="Estimated cost")
+    cost_estimate: Optional[ConfidenceWrapper[float]] = Field(None, description="Estimated cost")
     currency: Optional[str] = Field("CNY", description="Currency code")
     difference_summary: Optional[str] = Field(None, description="Summary of difference from main option")
     metadata: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Module specific metadata")
@@ -34,12 +38,12 @@ class ItineraryItem(BaseModel):
     description: Optional[str] = Field(None, description="Detailed description")
     start_time: Optional[datetime] = Field(None, description="Start time")
     end_time: Optional[datetime] = Field(None, description="End time")
-    duration_minutes: Optional[int] = Field(None, description="Estimated duration in minutes")
+    duration_minutes: Optional[ConfidenceWrapper[int]] = Field(None, description="Estimated duration in minutes")
     
     # Cost related
-    cost_estimate: Optional[float] = Field(None, description="Base cost estimate")
+    cost_estimate: Optional[ConfidenceWrapper[float]] = Field(None, description="Base cost estimate")
     currency: Optional[str] = Field("CNY", description="Currency code")
-    confidence_level: ConfidenceLevel = Field(ConfidenceLevel.GREEN, description="Confidence of the item data")
+    confidence_level: ConfidenceLevel = Field(ConfidenceLevel.L4, description="Confidence of the item data")
     
     # Other details
     location: Optional[str] = Field(None, description="Location name or address")

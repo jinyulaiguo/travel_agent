@@ -1,13 +1,32 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from './assets/vite.svg'
 import heroImg from './assets/hero.png'
 import './App.css'
 import HotelRecommendation from './features/hotel/components/HotelRecommendation'
 import DailySchedule from './features/daily_schedule/components/DailySchedule'
+import { DisclaimerBanner } from './components/Confidence'
+import QuickModeButton from './components/common/QuickModeButton'
+import ConfirmationGate from './components/common/ConfirmationGate'
+
+import { usePlanningStore, type NodeState } from './store/planningStore'
 
 function App() {
   const [count, setCount] = useState(0)
+  const { initSession } = usePlanningStore();
+
+  React.useEffect(() => {
+    // Mock initialization for testing
+    const mockNodes: Record<string, NodeState> = {
+      "L4_hotel": { status: "generated", data: {}, locked: false },
+      "L5_itinerary": { status: "generating", data: null, locked: false },
+      "L6_transport": { status: "pending", data: null, locked: false },
+    };
+    initSession("test_session_123", "user_123", mockNodes);
+    
+    // In real app, we would fetch the actual state
+    // fetchState("test_session_123", "user_123");
+  }, []);
 
   const mockItinerary = {
     days: [
@@ -98,18 +117,24 @@ function App() {
 
       <section id="daily-schedule-module" style={{ padding: '40px 0' }}>
         <h2 style={{ textAlign: 'center', marginBottom: '30px' }}>📅 每日行程编排测试</h2>
-        <DailySchedule initialData={mockItinerary as any} />
+        <ConfirmationGate nodeKey="L5_itinerary" title="每日行程编排">
+          <DailySchedule initialData={mockItinerary as any} />
+        </ConfirmationGate>
       </section>
 
       <div className="ticks"></div>
       
       <section id="hotel-module" style={{ padding: '40px 0' }}>
         <h2 style={{ textAlign: 'center', marginBottom: '30px' }}>🏨 酒店推荐测试</h2>
-        <HotelRecommendation />
+        <ConfirmationGate nodeKey="L4_hotel" title="酒店选择">
+          <HotelRecommendation />
+        </ConfirmationGate>
       </section>
 
       <div className="ticks"></div>
       <section id="spacer"></section>
+      <DisclaimerBanner />
+      <QuickModeButton />
     </>
   )
 }

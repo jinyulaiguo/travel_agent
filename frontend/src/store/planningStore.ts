@@ -6,7 +6,8 @@ export type NodeStatus = "pending" | "generating" | "generated" | "confirmed"
 export interface NodeState {
     status: NodeStatus;
     data: any | null;
-    lockedByUser: boolean;
+    locked: boolean;
+    compatibilityWarning?: string;
 }
 
 export interface SSEEvent {
@@ -18,48 +19,98 @@ export interface SSEEvent {
 
 interface PlanningStore {
     sessionId: string | null;
+    userId: string;
     nodes: Record<string, NodeState>;
     // actions
-    initSession: (sessionId: string, initialState: Record<string, NodeState>) => void;
+    initSession: (sessionId: string, userId: string, initialState: Record<string, NodeState>) => void;
     updateNodeFromSSE: (event: SSEEvent) => void;
-    confirmNode: (nodeKey: string) => Promise<void>;
-    rejectNode: (nodeKey: string, feedback: string) => Promise<void>;
-    lockNode: (nodeKey: string) => void;
+    fetchState: (sessionId: string, userId: string) => Promise<void>;
+    confirmNode: (nodeKey: string, data: any) => Promise<void>;
+    lockNode: (nodeKey: string) => Promise<void>;
+    unlockNode: (nodeKey: string) => Promise<void>;
+    batchConfirm: () => Promise<void>;
     rollback: (nodeKey: string) => Promise<void>;
 }
 
+const API_BASE = "http://localhost:8000/api/v1/state";
+
 export const usePlanningStore = create<PlanningStore>((set, get) => ({
     sessionId: null,
+    userId: "user_123", // Default for now
     nodes: {},
-    initSession: (sessionId, initialState) => set({ sessionId, nodes: initialState }),
-    updateNodeFromSSE: (event) => set((state) => ({
+    initSession: (sessionId: string, userId: string, initialState: Record<string, NodeState>) => 
+        set({ sessionId, userId, nodes: initialState }),
+    
+    updateNodeFromSSE: (event: SSEEvent) => set((state: PlanningStore) => ({
         nodes: {
             ...state.nodes, [event.node]: {
                 ...state.nodes[event.node],
                 status: event.status,
                 data: event.data ?? state.nodes[event.node]?.data,
-                lockedByUser: state.nodes[event.node]?.lockedByUser ?? false
+                locked: state.nodes[event.node]?.locked ?? false
             }
         }
     })),
-    confirmNode: async (nodeKey) => {
-        // Placeholder for confirmation API call
-        console.log(`Confirming node: ${nodeKey}`);
+
+    fetchState: async (sessionId: string, userId: string) => {
+        const res = await fetch(`${API_BASE}/${sessionId}?user_id=${userId}`);
+        const data = await res.json();
+        const newNodes: Record<string, NodeState> = {};
+        Object.entries(data.nodes).forEach(([key, val]: [string, any]) => {
+            newNodes[key] = {
+                status: val.status,
+                data: val.data,
+                locked: val.locked,
+                compatibilityWarning: val.compatibility_warning
+            };
+        });
+        set({ sessionId, userId, nodes: newNodes });
     },
-    rejectNode: async (nodeKey, feedback) => {
-        // Placeholder for rejection API call
-        console.log(`Rejecting node: ${nodeKey} with feedback: ${feedback}`);
+
+    confirmNode: async (nodeKey: string, data: any) => {
+        const { sessionId, userId } = get();
+        await fetch(`${API_BASE}/${sessionId}/nodes/${nodeKey}/confirm?user_id=${userId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
     },
-    lockNode: (nodeKey) => set((state) => ({
-        nodes: {
-            ...state.nodes, [nodeKey]: {
-                ...state.nodes[nodeKey],
-                lockedByUser: !state.nodes[nodeKey]?.lockedByUser
+
+    lockNode: async (nodeKey: string) => {
+        const { sessionId, userId } = get();
+        await fetch(`${API_BASE}/${sessionId}/nodes/${nodeKey}/lock?user_id=${userId}`, {
+            method: 'POST'
+        });
+        set((state: PlanningStore) => ({
+            nodes: {
+                ...state.nodes, [nodeKey]: { ...state.nodes[nodeKey], locked: true, status: 'locked' }
             }
-        }
-    })),
-    rollback: async (nodeKey) => {
-        // Placeholder for rollback API call
-        console.log(`Rolling back node: ${nodeKey}`);
+        }));
+    },
+
+    unlockNode: async (nodeKey: string) => {
+        const { sessionId, userId } = get();
+        await fetch(`${API_BASE}/${sessionId}/nodes/${nodeKey}/unlock?user_id=${userId}`, {
+            method: 'POST'
+        });
+        set((state: PlanningStore) => ({
+            nodes: {
+                ...state.nodes, [nodeKey]: { ...state.nodes[nodeKey], locked: false, status: 'confirmed' }
+            }
+        }));
+    },
+
+    batchConfirm: async () => {
+        const { sessionId, userId } = get();
+        await fetch(`${API_BASE}/${sessionId}/batch-confirm?user_id=${userId}`, {
+            method: 'POST'
+        });
+    },
+
+    rollback: async (nodeKey: string) => {
+        const { sessionId, userId } = get();
+        await fetch(`${API_BASE}/${sessionId}/nodes/${nodeKey}/rollback?user_id=${userId}`, {
+            method: 'POST'
+        });
     }
 }));

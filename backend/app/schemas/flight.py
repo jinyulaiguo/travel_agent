@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime
-from app.adapters.base import ConfidenceLevel
+from app.schemas.confidence import ConfidenceLevel, ConfidenceWrapper
 
 class FlightSearchRequest(BaseModel):
     origin: str = Field(..., description="出发地国家/城市代码，如 BJS")
@@ -18,9 +18,9 @@ class FlightSegment(BaseModel):
     duration_minutes: int
     stops: int
     transfer_cities: List[str] = []
-    price: float
-    price_snapshot_time: datetime
-    on_time_rate_30d: float = Field(..., description="近30天准点率，如 0.95")
+    price: ConfidenceWrapper[float]
+    price_snapshot_time: Optional[datetime] = None
+    on_time_rate_30d: ConfidenceWrapper[float] = Field(..., description="近30天准点率，如 0.95")
     airline: str
     is_manual_input: bool = False
 

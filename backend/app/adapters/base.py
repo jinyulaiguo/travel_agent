@@ -4,12 +4,7 @@ from datetime import datetime
 from pydantic import BaseModel
 from typing import Any
 
-class ConfidenceLevel(str, Enum):
-    L1_REALTIME = "L1"   # 实时接口，30分钟内有效
-    L2_SNAPSHOT = "L2"   # 快照，已超时效
-    L3_STATS = "L3"      # 历史统计
-    L4_KNOWLEDGE = "L4"  # 知识库
-    L5_ESTIMATE = "L5"   # 模型估算
+from app.schemas.confidence import ConfidenceLevel
 
 class AdapterResponse(BaseModel):
     data: dict[str, Any]

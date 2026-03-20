@@ -18,6 +18,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { Clock, MapPin, AlertCircle, Menu, GripVertical } from 'lucide-react';
 import type { DailyItinerary, DailyItineraryDay, DailyItineraryItem } from '../../../types/daily_itinerary';
+import { ConfidenceBadge } from '../../../components/Confidence';
 import './DailySchedule.css';
 
 interface SortableItemProps {
@@ -64,12 +65,13 @@ const SortableItem: React.FC<SortableItemProps> = ({ item }) => {
         <div className={`item-icon ${item.type}`}>
           {getIcon()}
         </div>
-        <div>
-          <div className="flex items-center">
+        <div style={{ flex: 1 }}>
+          <div className="flex items-center" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <span className="item-name">{item.name}</span>
+            {item.confidence_level && <ConfidenceBadge level={item.confidence_level} />}
             {item.notes && (
-              <span className="item-notes">
-                <AlertCircle size={10} style={{marginRight: '4px', display: 'inline'}} />
+              <span className="item-notes" style={{ display: 'flex', alignItems: 'center' }}>
+                <AlertCircle size={10} style={{marginRight: '4px'}} />
                 {item.notes}
               </span>
             )}
@@ -133,7 +135,10 @@ const DailySchedule: React.FC<DailyScheduleProps> = ({ initialData }) => {
       <div className="schedule-header">
         <div className="schedule-title">
           <h2>每日行程编排</h2>
-          <div className="schedule-subtitle">L5 自动填充生成 | 支持手动微调</div>
+          <div className="schedule-subtitle" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            L5 自动填充生成 | 支持手动微调
+            <ConfidenceBadge level="L5" note="由大模型规划生成，建议核实具体时长" />
+          </div>
         </div>
         
         <div className="day-selector">

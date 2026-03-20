@@ -25,7 +25,11 @@ const ManualHotelEntry: React.FC<ManualHotelEntryProps> = ({ onConfirm, onCancel
       name: formData.name,
       area: formData.area,
       coordinates: { lat: 0, lng: 0 }, // Placeholder
-      price_per_night: parseFloat(formData.price) || 0,
+      price_per_night: {
+        value: parseFloat(formData.price) || 0,
+        confidence_level: 'L5',
+        note: '用户手动录入'
+      },
       price_snapshot_time: new Date().toISOString(),
       ota_rating: parseFloat(formData.rating) || 5.0,
       ota_source: formData.source,

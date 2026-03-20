@@ -18,6 +18,7 @@ class NodeData(BaseModel):
     data: dict[str, Any] | None = None          # 模块输出的结构化数据
     confirmed_at: datetime | None = None
     locked: bool = False
+    compatibility_warning: str | None = None    # 当锁定节点受到上游变更影响时显示
     snapshots: list[dict] = Field(default_factory=list) # 历史快照，支持回滚
 
 class PlanningState(BaseModel):

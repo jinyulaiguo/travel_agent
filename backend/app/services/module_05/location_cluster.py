@@ -1,5 +1,6 @@
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Any
 import math
+import random
 
 class LocationClusterService:
     """
@@ -10,20 +11,61 @@ class LocationClusterService:
     def calculate_centroid(attractions: List[Dict[str, Any]]) -> Tuple[float, float]:
         """
         Calculates the centroid (geometric center) of a list of attractions.
-        Each attraction should have 'lat' and 'lng' in its coordinates.
         """
         if not attractions:
             return (0.0, 0.0)
             
         total_lat = 0.0
         total_lng = 0.0
+        points = 0
         
         for attraction in attractions:
             coords = attraction.get("coordinates") or {}
-            total_lat += coords.get("lat", 0.0)
-            total_lng += coords.get("lng", 0.0)
+            if "lat" in coords and "lng" in coords:
+                total_lat += coords["lat"]
+                total_lng += coords["lng"]
+                points += 1
             
-        return (total_lat / len(attractions), total_lng / len(attractions))
+        if points == 0: return (0.0, 0.0)
+        return (total_lat / points, total_lng / points)
+
+    @staticmethod
+    def kmeans_cluster(attractions: List[Dict[str, Any]], k: int = 2, iterations: int = 5) -> Dict[int, List[Dict[str, Any]]]:
+        """
+        Simple K-means clustering for attractions (Category III requirement).
+        Returns a mapping from cluster_id to list of attractions.
+        """
+        if not attractions or len(attractions) < k:
+            return {0: attractions}
+            
+        # Initial centroids
+        centroids = []
+        for i in range(k):
+            # Just pick distributed items as initial seeds
+            idx = (i * len(attractions)) // k
+            c = attractions[idx].get("coordinates")
+            centroids.append((c["lat"], c["lng"]))
+            
+        clusters = {i: [] for i in range(k)}
+        
+        for _ in range(iterations):
+            clusters = {i: [] for i in range(k)}
+            # Assignment
+            for attraction in attractions:
+                c = attraction.get("coordinates")
+                dist_sq = [(c["lat"] - x)**2 + (c["lng"] - y)**2 for x, y in centroids]
+                best_cluster = dist_sq.index(min(dist_sq))
+                clusters[best_cluster].append(attraction)
+                attraction["cluster_id"] = best_cluster
+            
+            # Update centroids
+            for i in range(k):
+                if clusters[i]:
+                    new_lat = sum(a["coordinates"]["lat"] for a in clusters[i]) / len(clusters[i])
+                    new_lng = sum(a["coordinates"]["lng"] for a in clusters[i]) / len(clusters[i])
+                    centroids[i] = (new_lat, new_lng)
+                    
+        return clusters
 
     @staticmethod
     def generate_area_rationale(area_name: str, attractions: List[Dict[str, Any]], avg_time: float) -> str:
@@ -38,16 +80,11 @@ class LocationClusterService:
     @staticmethod
     def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
         """
-        Calculate the great circle distance between two points 
-        on the earth (specified in decimal degrees)
+        Calculate the great circle distance between two points (km).
         """
-        # Convert decimal degrees to radians 
         lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
-
-        # Haversine formula 
         dlon = lon2 - lon1 
         dlat = lat2 - lat1 
         a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
         c = 2 * math.asin(math.sqrt(a)) 
-        r = 6371 # Radius of earth in kilometers. Use 3956 for miles
-        return c * r
+        return c * 6371

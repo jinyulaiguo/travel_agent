@@ -1,3 +1,5 @@
+import type { ConfidenceWrapper, ConfidenceLevelType } from "../../types/confidence";
+
 export interface Coordinates {
   lat: number;
   lng: number;
@@ -8,13 +10,13 @@ export interface HotelRecord {
   name: string;
   area: string;
   coordinates: Coordinates;
-  price_per_night: number;
+  price_per_night: ConfidenceWrapper<number>;
   price_snapshot_time: string;
   ota_rating: number;
   ota_source: string;
   distance_to_cluster_center_km: number;
   booking_url: string;
-  confidence_level: "L1" | "L2" | "L5";
+  confidence_level: ConfidenceLevelType;
   is_locked: boolean;
   is_manual_input: boolean;
   amenities: string[];

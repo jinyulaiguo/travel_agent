@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime
 from enum import Enum
-from app.adapters.base import ConfidenceLevel
+from app.schemas.confidence import ConfidenceLevel, ConfidenceWrapper
 
 class CostCategory(str, Enum):
     FLIGHT = "flight"
@@ -15,12 +15,11 @@ class CostCategory(str, Enum):
 class CostItem(BaseModel):
     category: CostCategory = Field(..., description="费用类别")
     source_module: str = Field(..., description="来源模块名称")
-    amount_min: float = Field(..., description="费用下限（原币种）")
-    amount_max: float = Field(..., description="费用上限（原币种）")
+    amount_min: ConfidenceWrapper[float] = Field(..., description="费用下限（原币种）")
+    amount_max: ConfidenceWrapper[float] = Field(..., description="费用上限（原币种）")
     currency: str = Field("CNY", description="原币种代码，如 CNY, THB, USD")
-    converted_amount_min_cny: float = Field(..., description="折算后人民币下限")
-    converted_amount_max_cny: float = Field(..., description="折算后人民币上限")
-    confidence: ConfidenceLevel = Field(..., description="置信度级别")
+    converted_amount_min_cny: ConfidenceWrapper[float] = Field(..., description="折算后人民币下限")
+    converted_amount_max_cny: ConfidenceWrapper[float] = Field(..., description="折算后人民币上限")
     snapshot_time: Optional[datetime] = Field(None, description="价格快照时间")
     is_manual_override: bool = Field(False, description="是否为用户手动录入覆盖")
     expired_warning: bool = Field(False, description="是否快照已过期（超过30分钟）")

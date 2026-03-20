@@ -1,3 +1,5 @@
+import type { ConfidenceLevelType } from "./confidence";
+
 export interface Coordinates {
   lat: number;
   lng: number;
@@ -12,6 +14,7 @@ export interface DailyItineraryItem {
   planned_end_time: string;
   duration_hours: number;
   notes?: string;
+  confidence_level?: ConfidenceLevelType;
 }
 
 export interface DailyItineraryDay {
