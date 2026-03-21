@@ -3,18 +3,19 @@ from langgraph.graph import StateGraph, START, END
 from app.schemas.state import PlanningState, NodeStatus, NodeData
 from app.core.planner.dining_planner import DiningPlannerModule
 from app.services.state_service import StateService
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from langchain_core.runnables import RunnableConfig
 # Add other imports as modules are implemented
 
-async def run_planner_node(state: PlanningState, node_key: str, planner_module: Any, db: Optional[Session] = None) -> PlanningState:
+async def run_planner_node(state: PlanningState, node_key: str, planner_module: Any, db: Optional[AsyncSession] = None) -> Dict[str, Any]:
     """通用节点运行逻辑，包含数据库持久化"""
     node = state.nodes.get(node_key)
     if not node:
-        return state
+        return {}
 
     # 如果节点已经 CONFIRMED 或 LOCKED，跳过生成
     if node.status in [NodeStatus.CONFIRMED, NodeStatus.LOCKED]:
-        return state
+        return {}
 
     # 更新状态为生成中
     node.status = NodeStatus.GENERATING
@@ -35,51 +36,53 @@ async def run_planner_node(state: PlanningState, node_key: str, planner_module: 
 
     # 如果提供了 DB session，持久化状态
     if db:
-        StateService.save_state(db, state)
+        await StateService.save_state(db, state)
 
-    return state
+    return {"nodes": {node_key: node}}
 
 # 各个节点的封装，支持从 graph config 中提取 db
-async def l0_intent_node(state: PlanningState, config: Any) -> PlanningState:
+async def l0_intent_node(state: PlanningState, config: RunnableConfig = None) -> Dict[str, Any]:
     # TODO: Implement IntentPlannerModule
-    return state
+    return {"nodes": {"L0_intent": state.nodes.get("L0_intent", NodeData())}}
 
-async def l1_flight_node(state: PlanningState, config: Any) -> PlanningState:
+async def l1_flight_node(state: PlanningState, config: RunnableConfig = None) -> Dict[str, Any]:
     # TODO: Implement FlightPlannerModule
-    return state
+    return {"nodes": {"L1_flight": state.nodes.get("L1_flight", NodeData())}}
 
-async def l2_destination_node(state: PlanningState, config: Any) -> PlanningState:
+async def l2_destination_node(state: PlanningState, config: RunnableConfig = None) -> Dict[str, Any]:
     # TODO: Implement DestinationPlannerModule
-    return state
+    return {"nodes": {"L2_destination": state.nodes.get("L2_destination", NodeData())}}
 
-async def l3_attractions_node(state: PlanningState, config: Any) -> PlanningState:
+async def l3_attractions_node(state: PlanningState, config: RunnableConfig = None) -> Dict[str, Any]:
     # TODO: Implement AttractionPlannerModule
-    return state
+    return {"nodes": {"L3_attractions": state.nodes.get("L3_attractions", NodeData())}}
 
-async def l4_hotel_node(state: PlanningState, config: Any) -> PlanningState:
+async def l4_hotel_node(state: PlanningState, config: RunnableConfig = None) -> Dict[str, Any]:
     # TODO: Implement HotelPlannerModule
-    return state
+    return {"nodes": {"L4_hotel": state.nodes.get("L4_hotel", NodeData())}}
 
-async def l5_itinerary_node(state: PlanningState, config: Any) -> PlanningState:
+async def l5_itinerary_node(state: PlanningState, config: RunnableConfig = None) -> Dict[str, Any]:
     # TODO: Implement ItineraryPlannerModule
-    return state
+    return {"nodes": {"L5_itinerary": state.nodes.get("L5_itinerary", NodeData())}}
 
-async def l6_transport_node(state: PlanningState, config: Any) -> PlanningState:
+async def l6_transport_node(state: PlanningState, config: RunnableConfig = None) -> Dict[str, Any]:
     # TODO: Implement TransportPlannerModule
-    return state
+    return {"nodes": {"L6_transport": state.nodes.get("L6_transport", NodeData())}}
 
-async def l7_dining_node(state: PlanningState, config: Any) -> PlanningState:
-    db = config.get("configurable", {}).get("db")
+async def l7_dining_node(state: PlanningState, config: RunnableConfig = None) -> Dict[str, Any]:
+    db = None
+    if config:
+        db = config.get("configurable", {}).get("db")
     module = DiningPlannerModule()
     return await run_planner_node(state, "L7_dining", module, db)
 
-async def l8_cost_node(state: PlanningState, config: Any) -> PlanningState:
+async def l8_cost_node(state: PlanningState, config: RunnableConfig = None) -> Dict[str, Any]:
     # TODO: Implement CostPlannerModule
-    return state
+    return {"nodes": {"L8_cost": state.nodes.get("L8_cost", NodeData())}}
 
-async def l9_export_node(state: PlanningState, config: Any) -> PlanningState:
+async def l9_export_node(state: PlanningState, config: RunnableConfig = None) -> Dict[str, Any]:
     # TODO: Implement ExportPlannerModule
-    return state
+    return {"nodes": {"L9_export": state.nodes.get("L9_export", NodeData())}}
 
 def create_planning_graph():
     """创建规划工作流图"""

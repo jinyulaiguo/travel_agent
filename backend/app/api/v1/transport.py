@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from typing import List
-from ..schemas.transport import TransportPlan, TransportRequest, DailyTransportPlan
-from ..services.transport import TransportService
+from ...schemas.transport import TransportPlan, TransportRequest, DailyTransportPlan
+from ...services.transport import TransportService
 
 router = APIRouter()
 transport_service = TransportService()

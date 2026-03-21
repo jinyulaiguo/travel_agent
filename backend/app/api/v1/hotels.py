@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Dict, Any, Optional
-from app.schemas.module_05 import HotelSelection
+from app.schemas.module_05 import HotelSelection, HotelRecommendRequest
 from app.services.module_05.hotel_service import HotelService
 
 router = APIRouter()
@@ -8,20 +8,17 @@ hotel_service = HotelService()
 
 @router.post("/recommend", response_model=HotelSelection)
 async def recommend_hotels(
-    attractions: List[Dict[str, Any]],
-    check_in: str,
-    check_out: str,
-    budget: Optional[float] = None
+    request: HotelRecommendRequest
 ):
     """
     Recommend hotels based on a list of confirmed attractions and dates.
     """
     try:
         recommendations = await hotel_service.get_hotel_recommendations(
-            attractions=attractions,
-            check_in=check_in,
-            check_out=check_out,
-            budget=budget
+            attractions=request.attractions,
+            check_in=request.check_in,
+            check_out=request.check_out,
+            budget=request.budget
         )
         return recommendations
     except Exception as e:

@@ -1,139 +1,80 @@
-import React, { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
 import './App.css'
-import HotelRecommendation from './features/hotel/components/HotelRecommendation'
-import DailySchedule from './features/daily_schedule/components/DailySchedule'
 import { DisclaimerBanner } from './components/Confidence'
 import QuickModeButton from './components/common/QuickModeButton'
-import ConfirmationGate from './components/common/ConfirmationGate'
-
-import { usePlanningStore, type NodeState } from './store/planningStore'
+import IntentInput from './features/intent/components/IntentInput'
+import TravelItinerary from './features/itinerary/components/TravelItinerary'
+import { usePlanningStore } from './store/planningStore'
 
 function App() {
-  const [count, setCount] = useState(0)
-  const { initSession } = usePlanningStore();
+  const { nodes, isPlanning } = usePlanningStore();
+  
+  // 计算当前生成的进度
+  const nodeKeys = Object.keys(nodes);
+  const totalNodes = 9; // L1 - L9
+  const progress = Math.min(100, Math.round((nodeKeys.length / totalNodes) * 100));
+  const isGenerating = nodeKeys.some(key => nodes[key].status === 'generating');
 
-  React.useEffect(() => {
-    // Mock initialization for testing
-    const mockNodes: Record<string, NodeState> = {
-      "L4_hotel": { status: "generated", data: {}, locked: false },
-      "L5_itinerary": { status: "generating", data: null, locked: false },
-      "L6_transport": { status: "pending", data: null, locked: false },
-    };
-    initSession("test_session_123", "user_123", mockNodes);
-    
-    // In real app, we would fetch the actual state
-    // fetchState("test_session_123", "user_123");
-  }, []);
-
-  const mockItinerary = {
-    days: [
-      {
-        day: 1,
-        date: "2026-03-20",
-        total_active_hours: 6.5,
-        has_conflicts: false,
-        items: [
-          {
-            id: "1",
-            type: "attraction",
-            name: "故宫博物院",
-            planned_start_time: "09:00",
-            planned_end_time: "12:00",
-            duration_hours: 3.0,
-            notes: "建议早点出发"
-          },
-          {
-            id: "2",
-            type: "fixed_slot",
-            name: "固定行程：午餐休息",
-            planned_start_time: "12:00",
-            planned_end_time: "13:30",
-            duration_hours: 1.5
-          },
-          {
-            id: "3",
-            type: "attraction",
-            name: "景山公园",
-            planned_start_time: "14:00",
-            planned_end_time: "15:30",
-            duration_hours: 1.5,
-            notes: "俯瞰故宫全景"
-          },
-          {
-            id: "4",
-            type: "buffer",
-            name: "交通/休息",
-            planned_start_time: "15:30",
-            planned_end_time: "16:00",
-            duration_hours: 0.5
-          }
-        ]
-      },
-      {
-        day: 2,
-        date: "2026-03-21",
-        total_active_hours: 4.0,
-        has_conflicts: false,
-        items: [
-          {
-            id: "5",
-            type: "attraction",
-            name: "颐和园",
-            planned_start_time: "09:00",
-            planned_end_time: "13:00",
-            duration_hours: 4.0
-          }
-        ]
-      }
-    ]
-  };
+  const hasData = nodeKeys.length > 0;
+  const showResults = hasData || isPlanning;
 
   return (
     <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+      <header style={{ padding: '2rem 1rem', borderBottom: '1px solid var(--border)' }}>
+        <h1 style={{ margin: 0, fontSize: '2.5rem' }}>Antigravity Travel</h1>
+        <p style={{ color: 'var(--text)', marginTop: '0.5rem' }}>您的私人 AI 旅游规划专家</p>
+      </header>
 
-      <div className="ticks"></div>
-
-      <section id="daily-schedule-module" style={{ padding: '40px 0' }}>
-        <h2 style={{ textAlign: 'center', marginBottom: '30px' }}>📅 每日行程编排测试</h2>
-        <ConfirmationGate nodeKey="L5_itinerary" title="每日行程编排">
-          <DailySchedule initialData={mockItinerary as any} />
-        </ConfirmationGate>
-      </section>
+      <main style={{ padding: '2rem 1rem', minHeight: '60vh' }}>
+        {/* Step 1: Intent Input (L0) */}
+        {!showResults ? (
+          <section id="intent-phase">
+            <IntentInput />
+          </section>
+        ) : (
+          /* Step 2 & 3: Generation and Results (L1 - L9) */
+          <section id="result-phase">
+            {isGenerating && (
+              <div style={{ 
+                maxWidth: '600px', 
+                margin: '2rem auto', 
+                padding: '1rem', 
+                background: 'var(--social-bg)',
+                borderRadius: '12px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span>AI 正在全力为您规划... {progress}%</span>
+                </div>
+                <div style={{ 
+                  width: '100%', 
+                  height: '8px', 
+                  background: 'var(--border)', 
+                  borderRadius: '4px',
+                  overflow: 'hidden'
+                }}>
+                  <div style={{ 
+                    width: `${progress}%`, 
+                    height: '100%', 
+                    background: 'var(--accent)',
+                    transition: 'width 0.5s ease-in-out'
+                  }}></div>
+                </div>
+              </div>
+            )}
+            
+            <TravelItinerary />
+          </section>
+        )}
+      </main>
 
       <div className="ticks"></div>
       
-      <section id="hotel-module" style={{ padding: '40px 0' }}>
-        <h2 style={{ textAlign: 'center', marginBottom: '30px' }}>🏨 酒店推荐测试</h2>
-        <ConfirmationGate nodeKey="L4_hotel" title="酒店选择">
-          <HotelRecommendation />
-        </ConfirmationGate>
-      </section>
+      <footer style={{ padding: '2rem', borderTop: '1px solid var(--border)', marginTop: '4rem' }}>
+        <DisclaimerBanner />
+        <div style={{ marginTop: '2rem', color: 'var(--text)', fontSize: '14px' }}>
+          &copy; 2026 Antigravity Travel AI. All rights reserved.
+        </div>
+      </footer>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-      <DisclaimerBanner />
       <QuickModeButton />
     </>
   )

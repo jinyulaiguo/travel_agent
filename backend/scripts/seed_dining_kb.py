@@ -1,5 +1,12 @@
 import asyncio
 import json
+import os
+import sys
+
+# Add project root to sys.path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import SessionLocal
 from app.models.dining import Restaurant, SpecialtyDish, DiningEtiquette
@@ -68,6 +75,24 @@ DINING_DATA = {
 
 async def seed():
     async with SessionLocal() as db:
+        # Fetch existing records for lookup to ensure idempotency
+        # and avoid JSON comparison issues in some DBs (like PostgreSQL)
+        
+        # Load existing specialties
+        res_dishes = await db.execute(select(SpecialtyDish))
+        existing_dishes = res_dishes.scalars().all()
+        # Lookup key: (city, name_text)
+        dish_lookup = {
+            (d.city, json.dumps(d.name, sort_keys=True)): d 
+            for d in existing_dishes
+        }
+        
+        # Load existing etiquette
+        res_etiq = await db.execute(select(DiningEtiquette))
+        existing_etiq = res_etiq.scalars().all()
+        # Lookup key: (city, title)
+        etiq_lookup = {(e.city, e.title): e for e in existing_etiq}
+
         for city, data in DINING_DATA.items():
             # Seed Restaurants
             for r in data["restaurants"]:
@@ -93,30 +118,38 @@ async def seed():
             
             # Seed Specialties
             for s in data["specialties"]:
-                dish = SpecialtyDish(
-                    city=city,
-                    name=s["name"],
-                    description=s["description"],
-                    price_min=s["price_min"],
-                    price_max=s["price_max"]
-                )
-                await db.add(dish)
+                key = (city, json.dumps(s["name"], sort_keys=True))
+                if key in dish_lookup:
+                    existing = dish_lookup[key]
+                    existing.description = s["description"]
+                    existing.price_min = s["price_min"]
+                    existing.price_max = s["price_max"]
+                else:
+                    dish = SpecialtyDish(
+                        city=city,
+                        name=s["name"],
+                        description=s["description"],
+                        price_min=s["price_min"],
+                        price_max=s["price_max"]
+                    )
+                    db.add(dish)
             
             # Seed Etiquette
             for e in data["etiquette"]:
-                etiq = DiningEtiquette(
-                    city=city,
-                    title=e["title"],
-                    content=e["content"]
-                )
-                await db.add(etiq)
+                key = (city, e["title"])
+                if key in etiq_lookup:
+                    existing = etiq_lookup[key]
+                    existing.content = e["content"]
+                else:
+                    etiq = DiningEtiquette(
+                        city=city,
+                        title=e["title"],
+                        content=e["content"]
+                    )
+                    db.add(etiq)
         
         await db.commit()
         print("Seeding completed successfully.")
 
 if __name__ == "__main__":
-    import os
-    import sys
-    # Add project root to sys.path for imports
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     asyncio.run(seed())

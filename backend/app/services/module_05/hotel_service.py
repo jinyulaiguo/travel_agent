@@ -1,6 +1,7 @@
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-from app.schemas.module_05 import HotelSelection, HotelRecord, Coordinates
+from app.schemas.module_05 import HotelSelection, HotelRecord, Coordinates, HotelRecommendRequest
+from app.schemas.confidence import ConfidenceWrapper
 from app.services.module_05.location_cluster import LocationClusterService
 from app.tools.hotel_search import hotel_search_mock
 from app.tools.map_route import map_route_mock
@@ -56,7 +57,11 @@ class HotelService:
                 name=h["name"],
                 area=h["area"],
                 coordinates=Coordinates(**h["coordinates"]),
-                price_per_night=h["price_per_night"],
+                price_per_night=ConfidenceWrapper(
+                    value=h["price_per_night"],
+                    confidence_level="L1",
+                    snapshot_time=h["price_snapshot_time"].isoformat()
+                ),
                 price_snapshot_time=h["price_snapshot_time"],
                 ota_rating=h["ota_rating"],
                 ota_source=h["ota_source"],

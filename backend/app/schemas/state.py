@@ -1,7 +1,8 @@
 from enum import Enum
 from pydantic import BaseModel, Field
-from typing import Any
+from typing import Any, Annotated
 from datetime import datetime
+import operator
 
 class NodeStatus(str, Enum):
     PENDING = "pending"       # 待生成
@@ -27,9 +28,9 @@ class PlanningState(BaseModel):
     created_at: datetime
     updated_at: datetime
     # 根约束（L0 输出）
-    constraints: dict[str, Any] | None = None
+    constraints: Annotated[dict[str, Any] | None, operator.ior] = None
     # 各节点状态
-    nodes: dict[str, NodeData] = Field(default_factory=lambda: {
+    nodes: Annotated[dict[str, NodeData], operator.ior] = Field(default_factory=lambda: {
         "L0_intent": NodeData(),
         "L1_flight": NodeData(),
         "L2_destination": NodeData(),

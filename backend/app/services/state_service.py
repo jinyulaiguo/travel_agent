@@ -1,7 +1,8 @@
 import json
 from datetime import datetime
 from typing import Any, Dict, List, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.state import PlanningStateModel
 from app.schemas.state import PlanningState, NodeStatus, NodeData
 
@@ -29,10 +30,13 @@ IMPACT_TABLE = {
 
 class StateService:
     @staticmethod
-    def get_state(db: Session, session_id: str, user_id: str) -> PlanningState:
-        db_state = db.query(PlanningStateModel).filter(
-            PlanningStateModel.session_id == session_id
-        ).first()
+    async def get_state(db: AsyncSession, session_id: str, user_id: str) -> PlanningState:
+        result = await db.execute(
+            select(PlanningStateModel).filter(
+                PlanningStateModel.session_id == session_id
+            )
+        )
+        db_state = result.scalars().first()
 
         if not db_state:
             state = PlanningState(
@@ -41,16 +45,19 @@ class StateService:
                 created_at=datetime.utcnow(),
                 updated_at=datetime.utcnow()
             )
-            StateService.save_state(db, state)
+            await StateService.save_state(db, state)
             return state
 
         return PlanningState.model_validate(db_state.state_json)
 
     @staticmethod
-    def save_state(db: Session, state: PlanningState):
-        db_state = db.query(PlanningStateModel).filter(
-            PlanningStateModel.session_id == state.session_id
-        ).first()
+    async def save_state(db: AsyncSession, state: PlanningState):
+        result = await db.execute(
+            select(PlanningStateModel).filter(
+                PlanningStateModel.session_id == state.session_id
+            )
+        )
+        db_state = result.scalars().first()
 
         state.updated_at = datetime.utcnow()
         state_dict = state.model_dump(mode='json')
@@ -68,11 +75,11 @@ class StateService:
             )
             db.add(db_state)
         
-        db.commit()
+        await db.commit()
 
     @staticmethod
-    def confirm_node(db: Session, session_id: str, user_id: str, node_id: str, data: Any):
-        state = StateService.get_state(db, session_id, user_id)
+    async def confirm_node(db: AsyncSession, session_id: str, user_id: str, node_id: str, data: Any):
+        state = await StateService.get_state(db, session_id, user_id)
         if node_id not in state.nodes:
             raise ValueError(f"Unknown node: {node_id}")
 
@@ -100,12 +107,12 @@ class StateService:
                     # Keep stale or change to pending? Usually stays stale until recomputed
                     pass
 
-        StateService.save_state(db, state)
+        await StateService.save_state(db, state)
         return state
 
     @staticmethod
-    def mark_stale(db: Session, session_id: str, user_id: str, node_id: str, reason: str):
-        state = StateService.get_state(db, session_id, user_id)
+    async def mark_stale(db: AsyncSession, session_id: str, user_id: str, node_id: str, reason: str):
+        state = await StateService.get_state(db, session_id, user_id)
         if node_id not in state.nodes:
             raise ValueError(f"Unknown node: {node_id}")
         
@@ -114,12 +121,12 @@ class StateService:
             return state
 
         state.nodes[node_id].status = NodeStatus.STALE
-        StateService.save_state(db, state)
+        await StateService.save_state(db, state)
         return state
 
     @staticmethod
-    def lock_node(db: Session, session_id: str, user_id: str, node_id: str):
-        state = StateService.get_state(db, session_id, user_id)
+    async def lock_node(db: AsyncSession, session_id: str, user_id: str, node_id: str):
+        state = await StateService.get_state(db, session_id, user_id)
         if node_id not in state.nodes:
             raise ValueError(f"Unknown node: {node_id}")
         state.nodes[node_id].locked = True
@@ -127,12 +134,12 @@ class StateService:
         # Requirement says "Locked status icon", but status machine usually needs a primary status.
         # Let's keep status as is or make it LOCKED to distinguish in UI readily.
         state.nodes[node_id].status = NodeStatus.LOCKED
-        StateService.save_state(db, state)
+        await StateService.save_state(db, state)
         return state
 
     @staticmethod
-    def unlock_node(db: Session, session_id: str, user_id: str, node_id: str):
-        state = StateService.get_state(db, session_id, user_id)
+    async def unlock_node(db: AsyncSession, session_id: str, user_id: str, node_id: str):
+        state = await StateService.get_state(db, session_id, user_id)
         if node_id not in state.nodes:
             raise ValueError(f"Unknown node: {node_id}")
         
@@ -140,23 +147,23 @@ class StateService:
         state.nodes[node_id].compatibility_warning = None
         state.nodes[node_id].status = NodeStatus.CONFIRMED 
         
-        StateService.save_state(db, state)
+        await StateService.save_state(db, state)
         return state
 
     @staticmethod
-    def batch_confirm_nodes(db: Session, session_id: str, user_id: str):
+    async def batch_confirm_nodes(db: AsyncSession, session_id: str, user_id: str):
         """Quick Mode: Batch confirm all unconfirmed nodes using latest data."""
-        state = StateService.get_state(db, session_id, user_id)
+        state = await StateService.get_state(db, session_id, user_id)
         for nid, node in state.nodes.items():
             if node.status in [NodeStatus.GENERATED, NodeStatus.STALE]:
                 node.status = NodeStatus.CONFIRMED
                 node.confirmed_at = datetime.utcnow()
-        StateService.save_state(db, state)
+        await StateService.save_state(db, state)
         return state
 
     @staticmethod
-    def rollback_node(db: Session, session_id: str, user_id: str, node_id: str):
-        state = StateService.get_state(db, session_id, user_id)
+    async def rollback_node(db: AsyncSession, session_id: str, user_id: str, node_id: str):
+        state = await StateService.get_state(db, session_id, user_id)
         if node_id not in state.nodes:
             raise ValueError(f"Unknown node: {node_id}")
 
@@ -172,7 +179,7 @@ class StateService:
         from app.services.state_service import ImpactPropagator
         ImpactPropagator.propagate(state, node_id)
         
-        StateService.save_state(db, state)
+        await StateService.save_state(db, state)
         return state
 
 class ImpactPropagator:

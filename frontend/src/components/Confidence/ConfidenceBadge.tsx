@@ -45,6 +45,11 @@ const CONFIDENCE_CONFIG: Record<ConfidenceLevelType, { label: string; color: str
 export const ConfidenceBadge: React.FC<ConfidenceBadgeProps> = ({ level, timestamp, note }) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const config = CONFIDENCE_CONFIG[level];
+  
+  if (!config) {
+    return null; // Don't crash if level is invalid
+  }
+
   const Icon = config.icon;
 
   return (

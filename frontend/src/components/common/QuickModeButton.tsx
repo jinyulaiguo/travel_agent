@@ -4,14 +4,18 @@ import { Zap, AlertCircle } from 'lucide-react';
 import './Interaction.css';
 
 const QuickModeButton: React.FC = () => {
-    const { batchConfirm } = usePlanningStore();
+    const { batchConfirm, triggerPlanning, sessionId } = usePlanningStore();
     const [showConfirm, setShowConfirm] = useState(false);
 
     const handleConfirm = async () => {
+        if (!sessionId) {
+            alert("请先输入并解析您的旅行意图。");
+            setShowConfirm(false);
+            return;
+        }
         await batchConfirm();
+        await triggerPlanning();
         setShowConfirm(false);
-        // Maybe toast notification
-        alert("已自动确认所有建议并生成完整行程！");
     };
 
     return (

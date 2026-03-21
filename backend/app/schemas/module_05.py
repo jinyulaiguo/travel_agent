@@ -1,6 +1,7 @@
 from typing import List, Optional
 from pydantic import BaseModel, Field
 from datetime import datetime
+from app.schemas.confidence import ConfidenceWrapper
 
 class Coordinates(BaseModel):
     lat: float
@@ -11,7 +12,7 @@ class HotelRecord(BaseModel):
     name: str
     area: str
     coordinates: Coordinates
-    price_per_night: float
+    price_per_night: ConfidenceWrapper[float]
     price_snapshot_time: datetime
     ota_rating: float
     ota_source: str
@@ -28,3 +29,9 @@ class HotelSelection(BaseModel):
     alternatives: List[HotelRecord] = Field(default_factory=list)
     recommended_area: str
     area_rationale: str
+
+class HotelRecommendRequest(BaseModel):
+    attractions: List[dict]
+    check_in: str
+    check_out: str
+    budget: Optional[float] = None

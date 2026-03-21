@@ -3,14 +3,27 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from fastapi.middleware.cors import CORSMiddleware
+
 from app.api.v1 import planner, intent, flights, destination, attractions, hotels, daily_schedule, transport, dining, cost, itinerary, state
 from app.core.exceptions import BaseAppError
 from app.core.logging import setup_logging
+from app.config import settings
 
 # 初始化日志
 setup_logging()
 
 app = FastAPI(title="Travel Agent API")
+
+# 设置 CORS
+if settings.BACKEND_CORS_ORIGINS:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 # 注册全局异常处理器
 @app.exception_handler(BaseAppError)

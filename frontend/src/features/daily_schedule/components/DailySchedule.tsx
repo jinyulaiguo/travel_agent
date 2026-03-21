@@ -6,7 +6,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  DragEndEvent,
+  type DragEndEvent,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -17,7 +17,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Clock, MapPin, AlertCircle, Menu, GripVertical } from 'lucide-react';
-import type { DailyItinerary, DailyItineraryDay, DailyItineraryItem } from '../../../types/daily_itinerary';
+import type { DailyItinerary, DailyItineraryItem } from '../../../types/daily_itinerary';
 import { ConfidenceBadge } from '../../../components/Confidence';
 import './DailySchedule.css';
 

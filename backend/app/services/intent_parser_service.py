@@ -16,13 +16,13 @@ class IntentParserService:
     def __init__(self):
         # 从统一个配置项读取
         self.llm = ChatOpenAI(
-            model="deepseek-chat", 
+            model=settings.DEEPSEEK_MODEL, 
             api_key=settings.DEEPSEEK_API_KEY or "sk-dummy", 
             base_url=settings.DEEPSEEK_BASE_URL,
             max_retries=2,
             temperature=0.0
         )
-        self.structured_llm = self.llm.with_structured_output(IntentParseResult)
+        self.structured_llm = self.llm.with_structured_output(IntentParseResult, method="function_calling")
 
     async def parse_user_input(
         self, 

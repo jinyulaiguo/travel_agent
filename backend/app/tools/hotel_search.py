@@ -1,6 +1,6 @@
 import random
 from datetime import datetime, timedelta
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 
 def hotel_search_mock(
     location: Dict[str, float], 
