@@ -1,6 +1,6 @@
 from enum import Enum
-from typing import Generic, Optional, TypeVar
-from pydantic import BaseModel
+from typing import Generic, Optional, TypeVar, Any
+from pydantic import BaseModel, model_validator
 
 T = TypeVar("T")
 
@@ -21,6 +21,23 @@ class ConfidenceWrapper(BaseModel, Generic[T]):
     confidence_level: ConfidenceLevel
     snapshot_time: Optional[str] = None
     note: Optional[str] = None
+
+    @model_validator(mode='before')
+    @classmethod
+    def validate_confidence_wrapper(cls, data: Any) -> Any:
+        # print(f"DEBUG: ConfidenceWrapper validating data: {data}")
+        if isinstance(data, dict) and "value" in data:
+            # If it's already a wrapper, ensure confidence_level exists
+            if "confidence_level" not in data:
+                data["confidence_level"] = ConfidenceLevel.L4
+            return data
+        
+        # If it's a raw value, wrap it
+        return {
+            "value": data,
+            "confidence_level": ConfidenceLevel.L4,
+            "note": "Automatically wrapped from raw value"
+        }
 
     class Config:
         use_enum_values = True

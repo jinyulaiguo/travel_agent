@@ -20,7 +20,13 @@ class KnowledgeBaseService:
             return []
 
     def get_attractions_by_city(self, city: str) -> List[AttractionRecord]:
-        return [a for a in self._data if a.city == city]
+        if not city:
+            return []
+        
+        # Normalize: '北京市' -> '北京', '清迈' -> '清迈'
+        normalized_city = city.replace("市", "").replace("县", "").strip()
+        
+        return [a for a in self._data if a.city.replace("市", "").replace("县", "").strip() == normalized_city]
 
     def search_attractions(self, query: str, city: Optional[str] = None) -> List[AttractionRecord]:
         results = []

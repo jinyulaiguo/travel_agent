@@ -66,5 +66,95 @@
     "notes": "严禁短裤背心，建议尽早前往以避开人流",
     "last_updated": "2024-03-01",
     "data_source": "官方网站"
+  },
+  {
+    "id": "att_bj_01",
+    "name": { "zh": "故宫博物院", "en": "The Forbidden City" },
+    "city": "北京",
+    "country_code": "CN",
+    "coordinates": { "lat": 39.9163, "lng": 116.3972 },
+    "suggested_duration_hours": 4.0,
+    "opening_hours": {
+      "mon-sun": { "open": "08:30", "close": "17:00" }
+    },
+    "admission_fee": { "adult": 60, "child": 0, "currency": "CNY" },
+    "crowd_index": 5,
+    "attraction_tags": ["文化古迹", "皇室建筑", "世界遗产"],
+    "suitable_for": ["历史爱好者", "家庭出游"],
+    "notes": "需提前在网上预约门票，周一闭馆",
+    "last_updated": "2024-03-01",
+    "data_source": "官方网站"
+  },
+  {
+    "id": "att_bj_02",
+    "name": { "zh": "天坛公园", "en": "Temple of Heaven" },
+    "city": "北京",
+    "country_code": "CN",
+    "coordinates": { "lat": 39.8822, "lng": 116.4066 },
+    "suggested_duration_hours": 2.5,
+    "opening_hours": {
+      "mon-sun": { "open": "06:00", "close": "22:00" }
+    },
+    "admission_fee": { "adult": 34, "child": 0, "currency": "CNY" },
+    "crowd_index": 4,
+    "attraction_tags": ["宗教建筑", "园林"],
+    "suitable_for": ["所有人"],
+    "notes": "建议购买联票，包含祈年殿等建筑内部游览",
+    "last_updated": "2024-03-01",
+    "data_source": "官方网站"
+  },
+  {
+    "id": "att_bj_03",
+    "name": { "zh": "颐和园", "en": "Summer Palace" },
+    "city": "北京",
+    "country_code": "CN",
+    "coordinates": { "lat": 39.9998, "lng": 116.2755 },
+    "suggested_duration_hours": 3.5,
+    "opening_hours": {
+      "mon-sun": { "open": "06:30", "close": "18:00" }
+    },
+    "admission_fee": { "adult": 30, "child": 0, "currency": "CNY" },
+    "crowd_index": 4,
+    "attraction_tags": ["园林", "世界遗产", "自然风光"],
+    "suitable_for": ["亲子游", "摄影爱好者"],
+    "notes": "北京皇家园林，建议乘船游览昆明湖",
+    "last_updated": "2024-03-01",
+    "data_source": "官方网站"
+  },
+  {
+    "id": "att_bj_04",
+    "name": { "zh": "八达岭长城", "en": "Badaling Great Wall" },
+    "city": "北京",
+    "country_code": "CN",
+    "coordinates": { "lat": 40.3597, "lng": 116.0200 },
+    "suggested_duration_hours": 5.0,
+    "opening_hours": {
+      "mon-sun": { "open": "06:30", "close": "19:00" }
+    },
+    "admission_fee": { "adult": 40, "child": 0, "currency": "CNY" },
+    "crowd_index": 5,
+    "attraction_tags": ["文化古迹", "世界遗产", "徒步"],
+    "suitable_for": ["历史爱好者", "活力达人"],
+    "notes": "建议错峰出行，乘坐S2线列车或索道",
+    "last_updated": "2024-03-01",
+    "data_source": "官方网站"
+  },
+  {
+    "id": "att_bj_05",
+    "name": { "zh": "南锣鼓巷", "en": "Nanluoguxiang" },
+    "city": "北京",
+    "country_code": "CN",
+    "coordinates": { "lat": 39.9388, "lng": 116.4035 },
+    "suggested_duration_hours": 2.0,
+    "opening_hours": {
+      "mon-sun": "24 hours"
+    },
+    "admission_fee": { "adult": 0, "child": 0, "currency": "CNY" },
+    "crowd_index": 5,
+    "attraction_tags": ["网红打卡", "历史街区", "美食购物"],
+    "suitable_for": ["年轻人", "美食爱好者"],
+    "notes": "北京最古老的街区之一，分布有许多特色小店和餐饮",
+    "last_updated": "2024-03-01",
+    "data_source": "马蜂窝"
   }
 ]

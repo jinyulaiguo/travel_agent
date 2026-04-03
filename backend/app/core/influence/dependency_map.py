@@ -6,7 +6,7 @@ INFLUENCE_MAP: dict[str, list[str]] = {
     "L1_flight": ["L5_itinerary", "L4_hotel", "L8_cost"],
     "L2_destination": ["L3_attractions", "L4_hotel", "L5_itinerary",
                        "L6_transport", "L7_dining", "L8_cost"],
-    "L3_attractions": ["L5_itinerary", "L6_transport", "L7_dining", "L8_cost"],
+    "L3_attractions": ["L4_hotel", "L5_itinerary", "L6_transport", "L7_dining", "L8_cost"],
     "L4_hotel": ["L5_itinerary", "L6_transport", "L8_cost"],
     "L5_itinerary": ["L6_transport", "L7_dining", "L8_cost"],
     "L6_transport": ["L8_cost"],

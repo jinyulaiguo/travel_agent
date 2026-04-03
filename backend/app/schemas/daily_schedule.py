@@ -10,6 +10,7 @@ class DailyItineraryItem(BaseModel):
     planned_start_time: str = Field(..., description="Format: HH:MM")
     planned_end_time: str = Field(..., description="Format: HH:MM")
     duration_hours: float
+    coordinates: Optional[Coordinates] = None
     notes: Optional[str] = None
 
 class DailyItineraryDay(BaseModel):

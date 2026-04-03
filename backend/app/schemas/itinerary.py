@@ -41,6 +41,11 @@ class ItineraryItem(BaseModel):
     booking_url: Optional[str] = Field(None, description="Associated booking link if any")
     metadata: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Module specific metadata")
     
+    # Transit to next item
+    transit_mode: Optional[str] = Field(None, description="Transit mode to next item (e.g. car, walk, subway)")
+    transit_duration: Optional[str] = Field(None, description="Transit duration (e.g. 15分钟)")
+    transit_distance: Optional[str] = Field(None, description="Transit distance (e.g. 5公里)")
+    
     alternatives: List[AlternativeOption] = Field(default_factory=list, description="List of max 2 alternative options")
 
 class DailyItinerary(BaseModel):

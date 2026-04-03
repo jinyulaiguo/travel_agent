@@ -12,7 +12,7 @@ class FlightService:
         self.adapter = AmadeusFlightAdapter()
         # 接口优先级：Amadeus API（主） -> 携程开放平台（备） -> Skyscanner API（备）
     
-    async def search_flights(self, origin: str, destination: str, date: str, passengers: int) -> FlightList:
+    async def search_flights(self, origin: str, destination: str, date: str, passengers: int, return_date: str = None) -> FlightList:
         logger.info(f"[FlightService] Initiating search_flights for {origin} -> {destination}")
         
         # 实现重试与 5秒 超时控制
@@ -27,7 +27,8 @@ class FlightService:
                     origin=origin, 
                     destination=destination, 
                     date=date, 
-                    passengers=passengers
+                    passengers=passengers,
+                    return_date=return_date
                 )
                 adapter_response = await asyncio.wait_for(fetch_task, timeout=timeout)
                 if adapter_response and not adapter_response.is_fallback:

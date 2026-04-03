@@ -1,15 +1,24 @@
 import React, { useState } from 'react';
 import { usePlanningStore } from '../../../store/planningStore';
+import { StepCard } from '../../../components/common/StepCard';
+import IntentForm from './IntentForm';
+import './intent.css';
+import { Send, Sparkles } from 'lucide-react';
 
 const IntentInput: React.FC = () => {
   const [text, setText] = useState('');
-  const { intent, parseIntent, confirmIntent, triggerPlanning } = usePlanningStore();
+  const { intent, parseIntent, confirmIntent, stepStatus } = usePlanningStore();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (text.trim()) {
       parseIntent(text);
-      setText('');
+    }
+  };
+
+  const handleRegenerate = () => {
+    if (text.trim() || intent.rawInput) {
+        parseIntent(text.trim() || intent.rawInput);
     }
   };
 
@@ -17,123 +26,76 @@ const IntentInput: React.FC = () => {
     confirmIntent();
   };
 
-  const handleGenerate = () => {
-    triggerPlanning();
-  };
+  // 状态适配
+  // 如果没有任何解析结果且未在解析中，那是初始态，不需要显示卡片外壳，只需显示输入框即可
+  const showCardMode = intent.result || stepStatus.intent === 'isGenerating';
+
+  if (!showCardMode) {
+     return (
+        <div className="initial-intent-container">
+            <h2 className="initial-intent-title"><Sparkles size={28} /> 开启您的 AI 旅程</h2>
+            <form onSubmit={handleSubmit} className="initial-intent-form">
+                <input
+                type="text"
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder="例如：我想五一去北京玩5天，预算1万，喜欢古建筑..."
+                className="intent-search-input"
+                />
+                <button
+                type="submit"
+                disabled={!text.trim()}
+                className="intent-search-btn"
+                >
+                <Send size={18} /> 发送
+                </button>
+            </form>
+        </div>
+     );
+  }
 
   return (
-    <div className="intent-container" style={{
-      maxWidth: '800px',
-      margin: '0 auto',
-      padding: '2rem',
-      background: 'var(--accent-bg)',
-      borderRadius: '16px',
-      border: '1px solid var(--accent-border)',
-      boxShadow: 'var(--shadow)',
-      textAlign: 'left'
-    }}>
-      <h2 style={{ color: 'var(--accent)', marginBottom: '1.5rem' }}>🌟 开启您的 AI 旅程</h2>
-      
+    <StepCard 
+       title="出行意图确认" 
+       status={stepStatus.intent}
+       dataSourceLabel="知识库大语言模型"
+       dataSourceType="model"
+       onRegenerate={intent.result && stepStatus.intent !== 'confirmed' ? handleRegenerate : undefined}
+       onConfirm={intent.result && stepStatus.intent !== 'confirmed' ? handleConfirm : undefined}
+    >
       {/* Search Input Area */}
-      <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem' }}>
-        <input
-          type="text"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="例如：我想五一去北京玩5天，预算1万，喜欢古建筑..."
-          style={{
-            flex: 1,
-            padding: '12px 20px',
-            borderRadius: '30px',
-            border: '2px solid var(--border)',
-            fontSize: '16px',
-            outline: 'none',
-            transition: 'border-color 0.3s',
-            background: 'var(--bg)',
-            color: 'var(--text-h)'
-          }}
-          disabled={intent.parsing}
-        />
-        <button
-          type="submit"
-          disabled={intent.parsing || !text.trim()}
-          style={{
-            padding: '12px 24px',
-            borderRadius: '30px',
-            border: 'none',
-            background: 'var(--accent)',
-            color: 'white',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            opacity: (intent.parsing || !text.trim()) ? 0.6 : 1
-          }}
-        >
-          {intent.parsing ? '解析中...' : '发送'}
-        </button>
-      </form>
+      {stepStatus.intent !== 'confirmed' && (
+          <form onSubmit={handleSubmit} className="intent-search-bar">
+            <input
+              type="text"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="修改自然语言意图并重新解析..."
+              className="intent-search-input-small"
+              disabled={stepStatus.intent === 'isGenerating'}
+            />
+            <button
+              type="submit"
+              disabled={stepStatus.intent === 'isGenerating' || !text.trim()}
+              className="intent-search-btn-small"
+            >
+              {stepStatus.intent === 'isGenerating' ? '解析中...' : '重新解析'}
+            </button>
+          </form>
+      )}
 
-      {/* Result Display */}
+      {/* Result Display as Form */}
       {intent.result && (
-        <div className="intent-result" style={{
-          padding: '1.5rem',
-          background: 'var(--bg)',
-          borderRadius: '12px',
-          border: '1px solid var(--border)'
-        }}>
-          {intent.result.clarification_message && (
-            <div style={{ marginBottom: '1rem', color: 'var(--accent)', fontWeight: '500' }}>
+        <div className="intent-result-form">
+          {intent.result.clarification_message && intent.result.clarification_message !== 'null' && (
+            <div className="clarification-msg">
               💡 {intent.result.clarification_message}
             </div>
           )}
-
-          <div style={{ fontSize: '14px', color: 'var(--text)' }}>
-            <strong>当前识别意图:</strong>
-            <ul style={{ marginTop: '0.5rem', listStyle: 'none', padding: 0 }}>
-              <li>📍 目的地: {intent.result.updated_intent.destinations?.map((d: any) => d.city).join(', ') || '未定'}</li>
-              <li>📅 日期: {intent.result.updated_intent.departure_date || '未定'} 至 {intent.result.updated_intent.return_date || '未定'}</li>
-              <li>👥 人数: {intent.result.updated_intent.travelers?.total || 1} 人</li>
-              <li>💰 预算档次: {intent.result.updated_intent.preferences?.accommodation_tier || '未定'}</li>
-            </ul>
-          </div>
-
-          <div style={{ display: 'flex', gap: '10px', marginTop: '1.5rem' }}>
-            {!intent.confirmed ? (
-              <button
-                onClick={handleConfirm}
-                style={{
-                  padding: '10px 20px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: '#10b981',
-                  color: 'white',
-                  fontWeight: 'bold',
-                  cursor: 'pointer'
-                }}
-              >
-                ✅ 确认意图
-              </button>
-            ) : (
-              <button
-                onClick={handleGenerate}
-                style={{
-                  padding: '12px 30px',
-                  borderRadius: '30px',
-                  border: 'none',
-                  background: 'linear-gradient(135deg, #aa3bff 0%, #6366f1 100%)',
-                  color: 'white',
-                  fontWeight: 'bold',
-                  fontSize: '16px',
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 15px rgba(170, 59, 255, 0.4)'
-                }}
-              >
-                🚀 一键生成完整行程
-              </button>
-            )}
-          </div>
+          <IntentForm />
         </div>
       )}
-    </div>
+    </StepCard>
   );
 };
 

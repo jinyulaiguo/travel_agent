@@ -12,7 +12,7 @@ class HotelRecord(BaseModel):
     name: str
     area: str
     coordinates: Coordinates
-    price_per_night: ConfidenceWrapper[float]
+    price_per_night: float
     price_snapshot_time: datetime
     ota_rating: float
     ota_source: str

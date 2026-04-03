@@ -53,6 +53,8 @@ class AttractionService:
                     cluster_id=i + 1,
                     suggested_duration_hours=a.suggested_duration_hours,
                     coordinates=a.coordinates,
+                    attraction_tags=a.attraction_tags,
+                    opening_hours=a.opening_hours,
                     confidence_level=a.confidence_level,
                     last_updated=a.last_updated,
                     is_custom=False

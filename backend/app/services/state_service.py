@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.state import PlanningStateModel
 from app.schemas.state import PlanningState, NodeStatus, NodeData
+from app.core.influence.dependency_map import INFLUENCE_MAP
 
 NODE_DEPENDENCIES = {
     "L0_intent": [],
@@ -19,14 +20,6 @@ NODE_DEPENDENCIES = {
     "L9_export": ["L8_cost"]
 }
 
-IMPACT_TABLE = {
-    "L0_intent": ["L1_flight", "L3_attractions", "L4_hotel", "L5_itinerary", "L6_transport", "L7_dining", "L8_cost"],
-    "L1_flight": ["L5_itinerary", "L8_cost"],
-    "L2_destination": ["L3_attractions", "L4_hotel", "L5_itinerary", "L6_transport", "L7_dining", "L8_cost"],
-    "L3_attractions": ["L5_itinerary", "L6_transport", "L8_cost"],
-    "L4_hotel": ["L5_itinerary", "L6_transport", "L8_cost"],
-    "L5_itinerary": ["L6_transport", "L8_cost"],
-}
 
 class StateService:
     @staticmethod
@@ -78,6 +71,24 @@ class StateService:
         await db.commit()
 
     @staticmethod
+    async def update_constraints(db: AsyncSession, session_id: str, user_id: str, constraints: Dict[str, Any]):
+        """更新会话的根约束 (L0 intent)"""
+        state = await StateService.get_state(db, session_id, user_id)
+        state.constraints = constraints
+        
+        # 同时更新 L0_intent 节点的确认状态
+        if "L0_intent" in state.nodes:
+            state.nodes["L0_intent"].status = NodeStatus.CONFIRMED
+            state.nodes["L0_intent"].data = constraints
+            state.nodes["L0_intent"].confirmed_at = datetime.utcnow()
+        
+        # 触发影响域传播
+        ImpactPropagator.propagate(state, "L0_intent")
+        
+        await StateService.save_state(db, state)
+        return state
+
+    @staticmethod
     async def confirm_node(db: AsyncSession, session_id: str, user_id: str, node_id: str, data: Any):
         state = await StateService.get_state(db, session_id, user_id)
         if node_id not in state.nodes:
@@ -97,15 +108,8 @@ class StateService:
         state.nodes[node_id].data = data
         state.nodes[node_id].confirmed_at = datetime.utcnow()
 
-        # Trigger downstream PENDING
-        for down_node, up_nodes in NODE_DEPENDENCIES.items():
-            if node_id in up_nodes:
-                if state.nodes[down_node].status == NodeStatus.PENDING:
-                    # Do nothing, it's already pending or check if all dependencies met
-                    pass
-                elif state.nodes[down_node].status == NodeStatus.STALE:
-                    # Keep stale or change to pending? Usually stays stale until recomputed
-                    pass
+        # 触发影响域传播 (L1-L9)
+        ImpactPropagator.propagate(state, node_id)
 
         await StateService.save_state(db, state)
         return state
@@ -152,12 +156,13 @@ class StateService:
 
     @staticmethod
     async def batch_confirm_nodes(db: AsyncSession, session_id: str, user_id: str):
-        """Quick Mode: Batch confirm all unconfirmed nodes using latest data."""
+        """Quick Mode: Disabled. Only allow if all nodes are confirmed."""
         state = await StateService.get_state(db, session_id, user_id)
-        for nid, node in state.nodes.items():
-            if node.status in [NodeStatus.GENERATED, NodeStatus.STALE]:
-                node.status = NodeStatus.CONFIRMED
-                node.confirmed_at = datetime.utcnow()
+        for nid in ["L1_flight", "L2_destination", "L3_attractions", "L4_hotel", "L5_itinerary"]:
+            if state.nodes.get(nid) and state.nodes[nid].status not in [NodeStatus.CONFIRMED, NodeStatus.LOCKED]:
+                raise ValueError(f"一键生成功能已禁用，只有在所有状态都确认完成后才可以进行一键生成。未确认节点: {nid}")
+                
+        # If all confirmed, we can potentially trigger L9 or just return state
         await StateService.save_state(db, state)
         return state
 
@@ -185,7 +190,7 @@ class StateService:
 class ImpactPropagator:
     @staticmethod
     def propagate(state: PlanningState, modified_node_id: str):
-        affected_nodes = IMPACT_TABLE.get(modified_node_id, [])
+        affected_nodes = INFLUENCE_MAP.get(modified_node_id, [])
         for node_id in affected_nodes:
             if node_id in state.nodes:
                 node = state.nodes[node_id]

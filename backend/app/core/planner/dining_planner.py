@@ -14,8 +14,8 @@ class DiningPlannerModule(BasePlannerModule):
         l2 = state.nodes.get("L2_destination")
         l5 = state.nodes.get("L5_itinerary")
         return (
-            l2 is not None and l2.status == NodeStatus.CONFIRMED and
-            l5 is not None and l5.status == NodeStatus.CONFIRMED
+            l2 is not None and l2.status in [NodeStatus.CONFIRMED] and
+            l5 is not None and l5.status in [NodeStatus.CONFIRMED]
         )
 
     async def generate(self, state: PlanningState) -> dict:

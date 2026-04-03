@@ -18,10 +18,12 @@ class FlightSegment(BaseModel):
     duration_minutes: int
     stops: int
     transfer_cities: List[str] = []
-    price: ConfidenceWrapper[float]
+    price: float
     price_snapshot_time: Optional[datetime] = None
-    on_time_rate_30d: ConfidenceWrapper[float] = Field(..., description="近30天准点率，如 0.95")
+    on_time_rate_30d: float = Field(..., description="近30天准点率，如 0.95")
     airline: str
+    transport_type: str = Field("flight", description="交通方式(flight, train等)")
+    ota_source: Optional[str] = Field("携程", description="数据来源(携程/12306/去哪儿/飞猪)")
     is_manual_input: bool = False
 
 class FlightCandidate(FlightSegment):

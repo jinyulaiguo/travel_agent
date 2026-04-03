@@ -57,11 +57,7 @@ class HotelService:
                 name=h["name"],
                 area=h["area"],
                 coordinates=Coordinates(**h["coordinates"]),
-                price_per_night=ConfidenceWrapper(
-                    value=h["price_per_night"],
-                    confidence_level="L1",
-                    snapshot_time=h["price_snapshot_time"].isoformat()
-                ),
+                price_per_night=h["price_per_night"],
                 price_snapshot_time=h["price_snapshot_time"],
                 ota_rating=h["ota_rating"],
                 ota_source=h["ota_source"],

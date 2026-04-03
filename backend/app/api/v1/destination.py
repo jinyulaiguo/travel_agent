@@ -12,41 +12,65 @@ from app.schemas.destination import (
 from app.services.destination_service import destination_service
 from app.schemas.state import PlanningState
 
-router = APIRouter(prefix="/api/v1/destination", tags=["destination"])
+from app.services.state_service import StateService
+from app.api import deps
+from sqlalchemy.ext.asyncio import AsyncSession
 
-# Temporary wrapper for stateless API tests until a DB is integrated
+router = APIRouter(tags=["destination"])
+
 class RecommendationRequest(BaseModel):
-    intent: ConstraintObject
-    flight: Optional[FlightAnchor] = None
-
-class ConfirmRequestWrapper(BaseModel):
-    request_data: DestinationConfirmRequest
-    flight: FlightAnchor
-    state: PlanningState
+    session_id: str
+    user_id: str = "default_user"
 
 @router.post("/recommend", response_model=DestinationRecommendation)
-async def get_recommendations(req: RecommendationRequest):
+async def get_recommendations(
+    req: RecommendationRequest,
+    db: AsyncSession = Depends(deps.get_db)
+):
     """
-    根据给定的意图和可选的航班信息，生成目的地游玩建议
+    根据给定的意图生成目的地游玩建议
     """
     try:
-        recommendations = destination_service.generate_recommendations(req.intent)
+        state = await StateService.get_state(db, req.session_id, req.user_id)
+        if not state.constraints:
+             raise HTTPException(status_code=400, detail="意图未初始化")
+        
+        constraints = ConstraintObject(**state.constraints)
+        recommendations = destination_service.generate_recommendations(constraints)
         return recommendations
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/confirm", response_model=DestinationConfig)
-async def confirm_destination(req: ConfirmRequestWrapper):
+async def confirm_destination(
+    request_data: DestinationConfirmRequest,
+    session_id: str,
+    user_id: str = "default_user",
+    db: AsyncSession = Depends(deps.get_db)
+):
     """
     确认目的地配置。
-    需传入用户确定的目的地、航班锚点以及当前系统状态，从而验证状态机依赖并锁定L2节点。
+    需传入用户确定的目的地，并锁定L2节点。
     """
     try:
+        state = await StateService.get_state(db, session_id, user_id)
+        
+        # 获取 L1 航班锚点
+        l1_node = state.nodes.get("L1_flight")
+        if not l1_node or not l1_node.data:
+            raise HTTPException(status_code=400, detail="请先确认航班信息 (L1)")
+            
+        flight = FlightAnchor(**l1_node.data)
+        
         config = destination_service.lock_destination(
-            request=req.request_data,
-            flight=req.flight,
-            state=req.state
+            request=request_data,
+            flight=flight,
+            state=state
         )
+        
+        # 持久化到状态机
+        await StateService.confirm_node(db, session_id, user_id, "L2_destination", config.model_dump(mode='json'))
+        
         return config
     except HTTPException as e:
         raise e

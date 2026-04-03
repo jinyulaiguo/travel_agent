@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     # CORS 配置
     BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000", "http://localhost:8080"]
 
+    # Mock 模式总开关
+    USE_MOCK: bool = True
+
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
 
 

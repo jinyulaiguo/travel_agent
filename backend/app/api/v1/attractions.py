@@ -5,8 +5,13 @@ from app.schemas.attraction import (
 )
 from app.services.attraction.attraction_service import AttractionService
 from app.services.attraction.knowledge_base_service import KnowledgeBaseService
+from app.services.state_service import StateService
+from app.api import deps
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.schemas.intent import ConstraintObject
+from app.schemas.destination import DestinationConfig
 
-router = APIRouter(prefix="/api/v1/attractions", tags=["Attractions"])
+router = APIRouter(tags=["attractions"])
 
 # Dependency injection for services
 def get_kb_service():
@@ -17,13 +22,66 @@ def get_attraction_service(kb_service: KnowledgeBaseService = Depends(get_kb_ser
 
 @router.post("/recommend", response_model=AttractionList)
 async def recommend_attractions(
-    request: AttractionRecommendationRequest,
+    session_id: str,
+    user_id: str = "default_user",
+    db: AsyncSession = Depends(deps.get_db),
     service: AttractionService = Depends(get_attraction_service)
 ):
     """
-    Generate initial recommended attractions.
+    Generate initial recommended attractions using session state.
     """
-    return service.recommend_attractions(request)
+    state = await StateService.get_state(db, session_id, user_id)
+    
+    # Needs L0
+    if not state.constraints:
+         raise HTTPException(status_code=400, detail="意图尚未确认")
+    
+    # Auto-handle L2_destination if missing (to support current simplified HIL flow)
+    l2_node = state.nodes.get("L2_destination")
+    if not l2_node or not l2_node.data:
+        from app.services.destination_service import destination_service
+        from app.schemas.flight import FlightAnchor
+        
+        l1_node = state.nodes.get("L1_flight")
+        if not l1_node or not l1_node.data:
+             raise HTTPException(status_code=400, detail="大交通尚未确认")
+             
+        constraints = ConstraintObject(**state.constraints)
+        flight = FlightAnchor(**l1_node.data)
+        
+        # Build a mock confirm request for first city
+        from app.schemas.destination import DestinationConfirmRequest, DestinationItem
+        if not constraints.destinations:
+             raise HTTPException(status_code=400, detail="意图中未包含目的地")
+             
+        dest_confirm = DestinationConfirmRequest(
+            destinations=[
+                DestinationItem(
+                    city=constraints.destinations[0].city,
+                    country_code=constraints.destinations[0].country_code,
+                    lat=constraints.destinations[0].lat or 39.9, # Default for Beijing
+                    lng=constraints.destinations[0].lng or 116.4,
+                    allocated_days=constraints.available_days or 3
+                )
+            ]
+        )
+        
+        dest_config = destination_service.lock_destination(dest_confirm, flight, state)
+        await StateService.confirm_node(db, session_id, user_id, "L2_destination", dest_config.model_dump(mode='json'))
+        # Re-fetch state or use local copy
+        state = await StateService.get_state(db, session_id, user_id)
+    
+    constraints = ConstraintObject(**state.constraints)
+    dest_config = DestinationConfig(**state.nodes["L2_destination"].data)
+    
+    # Build internal request
+    rec_request = AttractionRecommendationRequest(
+        cities=[d.city for d in dest_config.confirmed_destinations],
+        available_days=dest_config.total_days,
+        travel_style=constraints.preferences.travel_style
+    )
+    
+    return service.recommend_attractions(rec_request)
 
 @router.get("/search", response_model=List[AttractionRecord])
 async def search_attractions(
@@ -40,23 +98,15 @@ async def search_attractions(
         pass
     return results
 
-@router.post("/confirm")
+@router.post("/confirm", response_model=AttractionList)
 async def confirm_attractions(
-    attraction_list: AttractionList
+    attraction_list: AttractionList,
+    session_id: str,
+    user_id: str = "default_user",
+    db: AsyncSession = Depends(deps.get_db)
 ):
     """
-    Confirm the attraction list and trigger impact domain propagation.
+    Confirm the attraction list and persist to L3 node.
     """
-    # Trigger impact domain (Simulation for now)
-    impacted_modules = ["L5_daily_schedule", "L6_transport", "L8_cost_summary"]
-    
-    return {
-        "status": "success",
-        "message": "景点列表已确认",
-        "impact_domain_trigger": {
-            "source": "L3_attractions",
-            "stale_modules": impacted_modules,
-            "warning": "修改景点列表将影响：每日行程编排、交通规划、费用汇总"
-        },
-        "data": attraction_list
-    }
+    await StateService.confirm_node(db, session_id, user_id, "L3_attractions", attraction_list.model_dump(mode='json'))
+    return attraction_list

@@ -33,47 +33,75 @@ class AmadeusFlightAdapter(BaseAdapter):
             await asyncio.sleep(6.0)
 
         # 模拟响应数据
-        now = datetime.now()
-        candidates = [
+        # 使用请求中的日期，如果没有则使用明天
+        try:
+            req_date = datetime.strptime(date, "%Y-%m-%d") if date else datetime.now() + timedelta(days=1)
+            req_return_date = datetime.strptime(kwargs.get("return_date"), "%Y-%m-%d") if kwargs.get("return_date") else None
+        except Exception as e:
+            logger.error(f"[AmadeusAdapter] Error parsing dates: {e}")
+            req_date = datetime.now() + timedelta(days=1)
+            req_return_date = None
+
+        candidates = []
+        
+        # 生成去程航班
+        candidates.extend([
             FlightCandidate(
                 flight_id=f"MU{origin}{destination}1",
                 flight_no="MU1234",
-                departure_time=now + timedelta(days=1, hours=10),
-                arrival_time=now + timedelta(days=1, hours=14),
+                departure_time=req_date.replace(hour=10, minute=0),
+                arrival_time=req_date.replace(hour=14, minute=0),
                 duration_minutes=240,
                 stops=0,
                 price=1200.0,
-                price_snapshot_time=now,
+                price_snapshot_time=datetime.now(),
                 on_time_rate_30d=0.95,
                 airline="China Eastern"
             ),
             FlightCandidate(
                 flight_id=f"CA{origin}{destination}1",
                 flight_no="CA5678",
-                departure_time=now + timedelta(days=1, hours=8),
-                arrival_time=now + timedelta(days=1, hours=16),
+                departure_time=req_date.replace(hour=8, minute=0),
+                arrival_time=req_date.replace(hour=16, minute=0),
                 duration_minutes=480,
                 stops=1,
                 transfer_cities=["SHA"],
                 price=800.0,
-                price_snapshot_time=now,
+                price_snapshot_time=datetime.now(),
                 on_time_rate_30d=0.88,
                 airline="Air China"
-            ),
-            FlightCandidate(
-                flight_id=f"CZ{origin}{destination}1",
-                flight_no="CZ9012",
-                departure_time=now + timedelta(days=1, hours=12),
-                arrival_time=now + timedelta(days=1, hours=20),
-                duration_minutes=480,
-                stops=2,
-                transfer_cities=["SHA", "HKG"],
-                price=600.0,
-                price_snapshot_time=now,
-                on_time_rate_30d=0.75,
-                airline="China Southern"
             )
-        ]
+        ])
+
+        # 如果有返程日期，生成返程航班
+        if req_return_date:
+            candidates.extend([
+                FlightCandidate(
+                    flight_id=f"MU{destination}{origin}2",
+                    flight_no="MU5678",
+                    departure_time=req_return_date.replace(hour=11, minute=0),
+                    arrival_time=req_return_date.replace(hour=15, minute=0),
+                    duration_minutes=240,
+                    stops=0,
+                    price=1100.0,
+                    price_snapshot_time=datetime.now(),
+                    on_time_rate_30d=0.92,
+                    airline="China Eastern"
+                ),
+                FlightCandidate(
+                    flight_id=f"CZ{destination}{origin}2",
+                    flight_no="CZ4321",
+                    departure_time=req_return_date.replace(hour=14, minute=0),
+                    arrival_time=req_return_date.replace(hour=22, minute=0),
+                    duration_minutes=480,
+                    stops=1,
+                    transfer_cities=["BKK"],
+                    price=750.0,
+                    price_snapshot_time=datetime.now(),
+                    on_time_rate_30d=0.85,
+                    airline="China Southern"
+                )
+            ])
 
         # 2. 记录 API Response & Latency 日志
         logger.info(f"[AmadeusAdapter] API Response: fetched {len(candidates)} candidates. Latency: 1005ms")
@@ -82,7 +110,7 @@ class AmadeusFlightAdapter(BaseAdapter):
         return AdapterResponse(
             data={"candidates": candidates},
             confidence=ConfidenceLevel.L1_REALTIME,
-            fetched_at=now,
+            fetched_at=datetime.now(),
             source="Amadeus"
         )
 

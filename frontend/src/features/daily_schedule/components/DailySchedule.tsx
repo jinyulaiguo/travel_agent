@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -19,20 +19,25 @@ import { CSS } from '@dnd-kit/utilities';
 import { Clock, MapPin, AlertCircle, Menu, GripVertical } from 'lucide-react';
 import type { DailyItinerary, DailyItineraryItem } from '../../../types/daily_itinerary';
 import { ConfidenceBadge } from '../../../components/Confidence';
+import { TransitSegment } from './TransitSegment';
+import { StepCard } from '../../../components/common/StepCard';
+import MapRoute from './MapRoute';
+import { usePlanningStore } from '../../../store/planningStore';
 import './DailySchedule.css';
 
 interface SortableItemProps {
   item: DailyItineraryItem;
+  disabled?: boolean;
 }
 
-const SortableItem: React.FC<SortableItemProps> = ({ item }) => {
+const SortableItem: React.FC<SortableItemProps> = ({ item, disabled }) => {
   const {
     attributes,
     listeners,
     setNodeRef,
     transform,
     transition,
-  } = useSortable({ id: item.id });
+  } = useSortable({ id: item.id || item.name, disabled });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -44,6 +49,7 @@ const SortableItem: React.FC<SortableItemProps> = ({ item }) => {
       case 'attraction': return <MapPin size={18} />;
       case 'fixed_slot': return <Clock size={18} />;
       case 'buffer': return <Menu size={18} />;
+      default: return <MapPin size={18} />;
     }
   };
 
@@ -51,10 +57,10 @@ const SortableItem: React.FC<SortableItemProps> = ({ item }) => {
     <div
       ref={setNodeRef}
       style={style}
-      className="timeline-item"
+      className={`timeline-item ${disabled ? 'disabled' : ''}`}
     >
-      <div {...attributes} {...listeners} className="drag-handle">
-        <GripVertical size={20} />
+      <div {...attributes} {...listeners} className="drag-handle" style={{ cursor: disabled ? 'default' : 'grab' }}>
+        {!disabled && <GripVertical size={20} />}
       </div>
       
       <div className="item-time">
@@ -66,9 +72,9 @@ const SortableItem: React.FC<SortableItemProps> = ({ item }) => {
           {getIcon()}
         </div>
         <div style={{ flex: 1 }}>
-          <div className="flex items-center" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <span className="item-name">{item.name}</span>
-            {item.confidence_level && <ConfidenceBadge level={item.confidence_level} />}
+            {item.confidence_level && <ConfidenceBadge level={item.confidence_level as any} />}
             {item.notes && (
               <span className="item-notes" style={{ display: 'flex', alignItems: 'center' }}>
                 <AlertCircle size={10} style={{marginRight: '4px'}} />
@@ -77,7 +83,7 @@ const SortableItem: React.FC<SortableItemProps> = ({ item }) => {
             )}
           </div>
           <div className="item-duration">
-            预计时长: {item.duration_hours}小时
+            预计游玩: {item.duration_hours}小时
           </div>
         </div>
       </div>
@@ -89,13 +95,52 @@ const SortableItem: React.FC<SortableItemProps> = ({ item }) => {
   );
 };
 
-interface DailyScheduleProps {
-  initialData?: DailyItinerary;
-}
+const DailySchedule: React.FC = () => {
+  const { 
+      sessionId,
+      nodes,
+      intent,
+      stepStatus, 
+      generateStep, 
+      confirmStep, 
+      setStepStatus,
+  } = usePlanningStore();
 
-const DailySchedule: React.FC<DailyScheduleProps> = ({ initialData }) => {
-  const [itinerary, setItinerary] = useState<DailyItinerary>(initialData || { days: [] });
+  const [itinerary, setItinerary] = useState<DailyItinerary | null>(null);
   const [selectedDay, setSelectedDay] = useState(0);
+  const [isModified, setIsModified] = useState(false);
+
+  const isConfirmed = stepStatus.schedule === 'confirmed';
+
+  const fetchSchedule = async () => {
+      if (!sessionId) return;
+      try {
+          const dests = intent.result?.updated_intent?.destinations?.map((d:any)=>d.city) || ['北京'];
+          const body = {
+             plan_id: sessionId,
+             destination_cities: dests,
+             start_date: intent.result?.updated_intent?.departure_date || new Date().toISOString().split('T')[0],
+             end_date: intent.result?.updated_intent?.return_date || new Date().toISOString().split('T')[0]
+          };
+          const data = await generateStep("schedule", "/schedules/generate", "POST", body);
+          setItinerary(data);
+          setIsModified(false);
+      } catch (e) {
+          console.error("Schedule generation failed", e);
+      }
+  };
+
+  useEffect(() => {
+    if (stepStatus.schedule === 'pending' && !nodes['L5_itinerary']?.data) {
+        fetchSchedule();
+    } else if (nodes['L5_itinerary']?.data) {
+        setItinerary(nodes['L5_itinerary'].data);
+        if (nodes['L5_itinerary'].status === 'confirmed') {
+            setStepStatus('schedule', 'confirmed');
+        }
+    }
+    // eslint-disable-next-line
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -106,101 +151,121 @@ const DailySchedule: React.FC<DailyScheduleProps> = ({ initialData }) => {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-
-    if (over && active.id !== over.id) {
+    if (over && active.id !== over.id && itinerary) {
       setItinerary((prev) => {
+        if (!prev) return prev;
         const newDays = [...prev.days];
         const day = { ...newDays[selectedDay] };
         const items = [...day.items];
-        const oldIndex = items.findIndex((i) => i.id === active.id);
-        const newIndex = items.findIndex((i) => i.id === over.id);
+        const oldIndex = items.findIndex((i) => (i.id || i.name) === active.id);
+        const newIndex = items.findIndex((i) => (i.id || i.name) === over.id);
         
         day.items = arrayMove(items, oldIndex, newIndex);
-        
-        // Simulating auto-recalculation
         newDays[selectedDay] = day;
         return { ...prev, days: newDays };
       });
-      
-      console.log('行程调整已保存，触发 STALE 标记...');
+      setIsModified(true);
     }
   };
 
-  const currentDay = itinerary.days[selectedDay];
+  const currentDay = itinerary?.days[selectedDay];
 
-  if (!currentDay) return <div className="p-10 text-center text-gray-400">暂无行程数据</div>;
+  const handleConfirm = async () => {
+      if (!itinerary) return;
+      const body = {
+          plan_id: sessionId,
+          itinerary: itinerary
+      };
+      await confirmStep("schedule", `/schedules/adjust`, body);
+  };
 
   return (
-    <div className="schedule-container">
-      <div className="schedule-header">
-        <div className="schedule-title">
-          <h2>每日行程编排</h2>
-          <div className="schedule-subtitle" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            L5 自动填充生成 | 支持手动微调
-            <ConfidenceBadge level="L5" note="由大模型规划生成，建议核实具体时长" />
-          </div>
-        </div>
-        
-        <div className="day-selector">
-          {itinerary.days.map((day, idx) => (
-            <button
-              key={day.day}
-              onClick={() => setSelectedDay(idx)}
-              className={`day-btn ${selectedDay === idx ? 'active' : ''}`}
-            >
-              Day {day.day}
-            </button>
-          ))}
-        </div>
-      </div>
+    <StepCard
+       title="每日行程编排"
+       status={stepStatus.schedule}
+       dataSourceLabel="知识库大语言模型 (L5)"
+       dataSourceType="model"
+       onRegenerate={!isConfirmed ? fetchSchedule : undefined}
+       onConfirm={!isConfirmed && itinerary ? handleConfirm : undefined}
+    >
+      <div className="schedule-container" style={{ margin: 0, border: 'none', boxShadow: 'none', padding: 0 }}>
+        {!itinerary ? (
+            <div className="empty-msg" style={{ padding: '20px 0' }}>{stepStatus.schedule === 'isGenerating' ? '正在智能分配您的路线...' : '暂无数据'}</div>
+        ) : (
+            <>
+                <div className="day-selector" style={{ marginBottom: '24px', display: 'inline-flex' }}>
+                {itinerary.days.map((day, idx) => (
+                    <button
+                        key={day.day}
+                        onClick={() => setSelectedDay(idx)}
+                        className={`day-btn ${selectedDay === idx ? 'active' : ''}`}
+                    >
+                    Day {day.day}
+                    </button>
+                ))}
+                </div>
 
-      <div className="itinerary-card">
-        <div className="itinerary-info">
-          <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-            <span className="date-badge">
-              {currentDay.date}
-            </span>
-            <span className="stats">
-              累计活动时长: <b>{currentDay.total_active_hours}h</b>
-              {currentDay.total_active_hours > 10 && (
-                <span style={{marginLeft: '12px', color: '#f43f5e', fontWeight: 'bold'}}>
-                  ⚠️ 超出建议强度
-                </span>
-              )}
-            </span>
-          </div>
-        </div>
+                {currentDay && (
+                <div className="itinerary-card" style={{ padding: '20px' }}>
+                    <div className="itinerary-info">
+                        <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+                            <span className="date-badge">
+                            {currentDay.date}
+                            </span>
+                            <span className="stats">
+                            累计活动时长: <b>{currentDay.total_active_hours}h</b>
+                            {currentDay.total_active_hours > 10 && (
+                                <span style={{marginLeft: '12px', color: '#f43f5e', fontWeight: 'bold'}}>
+                                ⚠️ 超出建议强度
+                                </span>
+                            )}
+                            </span>
+                        </div>
+                    </div>
 
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={currentDay.items.map(i => i.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            <div className="timeline">
-              {currentDay.items.map((item) => (
-                <SortableItem key={item.id} item={item} />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
-        
-        <div className="impact-alert">
-          <div className="alert-icon">
-            <AlertCircle size={24} />
-          </div>
-          <div>
-            <div className="alert-title">行程调整已保存</div>
-            <div className="alert-desc">
-              注意：手动调整景点顺序后，原有的城市内交通（L6）和行程费用（L8）规划将自动进入失效状态，需重新触发计算。
-            </div>
-          </div>
-        </div>
+                    <MapRoute items={currentDay.items} />
+
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={isConfirmed ? undefined : handleDragEnd}
+                    >
+                        <SortableContext
+                            items={currentDay.items.map(i => i.id || i.name)}
+                            strategy={verticalListSortingStrategy}
+                        >
+                            <div className="timeline">
+                                {currentDay.items.map((item, idx) => (
+                                    <React.Fragment key={item.id || item.name}>
+                                        <SortableItem item={item} disabled={isConfirmed} />
+                                        {idx < currentDay.items.length - 1 && (
+                                            <TransitSegment mode="驾车" duration="30分钟" distance="5公里" />
+                                        )}
+                                    </React.Fragment>
+                                ))}
+                            </div>
+                        </SortableContext>
+                    </DndContext>
+                    
+                    {isModified && !isConfirmed && (
+                        <div className="impact-alert">
+                            <div className="alert-icon">
+                                <AlertCircle size={24} />
+                            </div>
+                            <div>
+                                <div className="alert-title">行程已调整</div>
+                                <div className="alert-desc">
+                                    注意：手动调整景点顺序后，原有的城市内交通（L6）规划将自动更新以匹配新的接驳路线。
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+                )}
+            </>
+        )}
       </div>
-    </div>
+    </StepCard>
   );
 };
 

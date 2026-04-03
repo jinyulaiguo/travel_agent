@@ -1,14 +1,23 @@
 from typing import Any, Dict, List, Optional
 from langgraph.graph import StateGraph, START, END
 from app.schemas.state import PlanningState, NodeStatus, NodeData
+from app.core.planner.intent_planner import IntentPlannerModule
+from app.core.planner.flight_planner import FlightPlannerModule
+from app.core.planner.destination_planner import DestinationPlannerModule
+from app.core.planner.attraction_planner import AttractionPlannerModule
+from app.core.planner.hotel_planner import HotelPlannerModule
+from app.core.planner.itinerary_planner import ItineraryPlannerModule
+from app.core.planner.transport_planner import TransportPlannerModule
 from app.core.planner.dining_planner import DiningPlannerModule
+from app.core.planner.cost_planner import CostPlannerModule
+from app.core.planner.export_planner import ExportPlannerModule
 from app.services.state_service import StateService
 from sqlalchemy.ext.asyncio import AsyncSession
 from langchain_core.runnables import RunnableConfig
 # Add other imports as modules are implemented
 
-async def run_planner_node(state: PlanningState, node_key: str, planner_module: Any, db: Optional[AsyncSession] = None) -> Dict[str, Any]:
-    """通用节点运行逻辑，包含数据库持久化"""
+async def run_planner_node(state: PlanningState, node_key: str, planner_module: Any, db_factory: Optional[Any] = None) -> Dict[str, Any]:
+    """通用节点运行逻辑，包含数据库持久化 (使用 db_factory 以支持并发)"""
     node = state.nodes.get(node_key)
     if not node:
         return {}
@@ -19,7 +28,10 @@ async def run_planner_node(state: PlanningState, node_key: str, planner_module: 
 
     # 更新状态为生成中
     node.status = NodeStatus.GENERATING
-    
+    if db_factory:
+        async with db_factory() as db:
+            await StateService.save_state(db, state)
+
     try:
         # 校验输入依赖
         if await planner_module.validate_input(state):
@@ -30,59 +42,68 @@ async def run_planner_node(state: PlanningState, node_key: str, planner_module: 
             # 依赖未就绪，或者上游数据不足
             node.status = NodeStatus.PENDING
     except Exception as e:
-        # TODO: Log error properly
+        import traceback
         node.status = NodeStatus.STALE
         node.compatibility_warning = f"生成失败: {str(e)}"
+        print(f"Error in node {node_key}: {traceback.format_exc()}")
 
-    # 如果提供了 DB session，持久化状态
-    if db:
-        await StateService.save_state(db, state)
+    # 如果提供了 DB factory，打开独立 session 持久化状态
+    if db_factory:
+        async with db_factory() as db:
+            await StateService.save_state(db, state)
 
     return {"nodes": {node_key: node}}
 
-# 各个节点的封装，支持从 graph config 中提取 db
+# 各个节点的封装，支持从 graph config 中提取 db_factory
 async def l0_intent_node(state: PlanningState, config: RunnableConfig = None) -> Dict[str, Any]:
-    # TODO: Implement IntentPlannerModule
-    return {"nodes": {"L0_intent": state.nodes.get("L0_intent", NodeData())}}
+    db_factory = config.get("configurable", {}).get("db_factory") if config else None
+    module = IntentPlannerModule()
+    return await run_planner_node(state, "L0_intent", module, db_factory)
 
 async def l1_flight_node(state: PlanningState, config: RunnableConfig = None) -> Dict[str, Any]:
-    # TODO: Implement FlightPlannerModule
-    return {"nodes": {"L1_flight": state.nodes.get("L1_flight", NodeData())}}
+    db_factory = config.get("configurable", {}).get("db_factory") if config else None
+    module = FlightPlannerModule()
+    return await run_planner_node(state, "L1_flight", module, db_factory)
 
 async def l2_destination_node(state: PlanningState, config: RunnableConfig = None) -> Dict[str, Any]:
-    # TODO: Implement DestinationPlannerModule
-    return {"nodes": {"L2_destination": state.nodes.get("L2_destination", NodeData())}}
+    db_factory = config.get("configurable", {}).get("db_factory") if config else None
+    module = DestinationPlannerModule()
+    return await run_planner_node(state, "L2_destination", module, db_factory)
 
 async def l3_attractions_node(state: PlanningState, config: RunnableConfig = None) -> Dict[str, Any]:
-    # TODO: Implement AttractionPlannerModule
-    return {"nodes": {"L3_attractions": state.nodes.get("L3_attractions", NodeData())}}
+    db_factory = config.get("configurable", {}).get("db_factory") if config else None
+    module = AttractionPlannerModule()
+    return await run_planner_node(state, "L3_attractions", module, db_factory)
 
 async def l4_hotel_node(state: PlanningState, config: RunnableConfig = None) -> Dict[str, Any]:
-    # TODO: Implement HotelPlannerModule
-    return {"nodes": {"L4_hotel": state.nodes.get("L4_hotel", NodeData())}}
+    db_factory = config.get("configurable", {}).get("db_factory") if config else None
+    module = HotelPlannerModule()
+    return await run_planner_node(state, "L4_hotel", module, db_factory)
 
 async def l5_itinerary_node(state: PlanningState, config: RunnableConfig = None) -> Dict[str, Any]:
-    # TODO: Implement ItineraryPlannerModule
-    return {"nodes": {"L5_itinerary": state.nodes.get("L5_itinerary", NodeData())}}
+    db_factory = config.get("configurable", {}).get("db_factory") if config else None
+    module = ItineraryPlannerModule()
+    return await run_planner_node(state, "L5_itinerary", module, db_factory)
 
 async def l6_transport_node(state: PlanningState, config: RunnableConfig = None) -> Dict[str, Any]:
-    # TODO: Implement TransportPlannerModule
-    return {"nodes": {"L6_transport": state.nodes.get("L6_transport", NodeData())}}
+    db_factory = config.get("configurable", {}).get("db_factory") if config else None
+    module = TransportPlannerModule()
+    return await run_planner_node(state, "L6_transport", module, db_factory)
 
 async def l7_dining_node(state: PlanningState, config: RunnableConfig = None) -> Dict[str, Any]:
-    db = None
-    if config:
-        db = config.get("configurable", {}).get("db")
+    db_factory = config.get("configurable", {}).get("db_factory") if config else None
     module = DiningPlannerModule()
-    return await run_planner_node(state, "L7_dining", module, db)
+    return await run_planner_node(state, "L7_dining", module, db_factory)
 
 async def l8_cost_node(state: PlanningState, config: RunnableConfig = None) -> Dict[str, Any]:
-    # TODO: Implement CostPlannerModule
-    return {"nodes": {"L8_cost": state.nodes.get("L8_cost", NodeData())}}
+    db_factory = config.get("configurable", {}).get("db_factory") if config else None
+    module = CostPlannerModule()
+    return await run_planner_node(state, "L8_cost", module, db_factory)
 
 async def l9_export_node(state: PlanningState, config: RunnableConfig = None) -> Dict[str, Any]:
-    # TODO: Implement ExportPlannerModule
-    return {"nodes": {"L9_export": state.nodes.get("L9_export", NodeData())}}
+    db_factory = config.get("configurable", {}).get("db_factory") if config else None
+    module = ExportPlannerModule()
+    return await run_planner_node(state, "L9_export", module, db_factory)
 
 def create_planning_graph():
     """创建规划工作流图"""
@@ -105,20 +126,16 @@ def create_planning_graph():
     workflow.add_edge("L0_intent", "L1_flight")
     workflow.add_edge("L1_flight", "L2_destination")
     
-    # 分叉到 L3 和 L4
+    # 串行执行 L3 -> L4 -> L5
     workflow.add_edge("L2_destination", "L3_attractions")
-    workflow.add_edge("L2_destination", "L4_hotel")
-    
-    # 汇聚到 L5 (L5 等待 L3 和 L4)
-    workflow.add_edge("L3_attractions", "L5_itinerary")
+    workflow.add_edge("L3_attractions", "L4_hotel")
     workflow.add_edge("L4_hotel", "L5_itinerary")
     
-    # L5 完成后并行执行 L6 和 L7
+    # 串行执行 L6 -> L7 防止并发数据库脏写
     workflow.add_edge("L5_itinerary", "L6_transport")
-    workflow.add_edge("L5_itinerary", "L7_dining")
+    workflow.add_edge("L6_transport", "L7_dining")
     
     # 汇聚到 L8
-    workflow.add_edge("L6_transport", "L8_cost")
     workflow.add_edge("L7_dining", "L8_cost")
     
     workflow.add_edge("L8_cost", "L9_export")

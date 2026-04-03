@@ -23,7 +23,8 @@ def check_availability(opening_hours: Dict[str, Any], target_date: str, planned_
     # 2. Check regular hours
     day_range = opening_hours.get("regular", {}).get(weekday_str)
     if not day_range:
-        return False, planned_start_time, "该景点在此周几不开放（例如：周一闭馆）"
+        # Default to 09:00 - 20:00 if not specified to avoid skipping all items
+        day_range = ["09:00", "20:00"]
     
     open_time = datetime.strptime(day_range[0], "%H:%M").time()
     close_time = datetime.strptime(day_range[1], "%H:%M").time()

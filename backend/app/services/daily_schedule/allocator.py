@@ -147,6 +147,7 @@ class Allocator:
                     planned_start_time=current_dt.strftime("%H:%M"),
                     planned_end_time=planned_end_dt.strftime("%H:%M"),
                     duration_hours=duration_hrs,
+                    coordinates=attraction.coordinates,
                     notes=warning if warning else None
                 ))
                 

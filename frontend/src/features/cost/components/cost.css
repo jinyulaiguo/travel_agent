@@ -1,0 +1,124 @@
+.cost-summary-container {
+  padding: 12px 0;
+}
+
+.budget-comparison {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  margin-bottom: 24px;
+  border-radius: 12px;
+  background: #fdf2f2;
+  border: 1px solid #fee2e2;
+  font-size: 14px;
+}
+
+.budget-target {
+  color: #475569;
+}
+
+.budget-status.warning {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.budget-status.success {
+  color: #059669;
+  font-weight: 700;
+  background: #f0fdf4;
+  border-color: #dcfce7;
+}
+
+
+.cost-total-display {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 32px;
+  background: #f8fafc;
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid #f1f5f9;
+}
+
+.cost-total-label {
+  font-size: 1.1rem;
+  color: #64748b;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.cost-total-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.cost-details {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.cost-chart-section {
+  flex-shrink: 0;
+}
+
+.cost-legend-section {
+  flex: 1;
+  min-width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cost-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed #e2e8f0;
+}
+
+.cost-legend-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.legend-marker {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legend-info {
+  flex: 1;
+}
+
+.legend-name {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 1rem;
+}
+
+.legend-desc {
+  font-weight: 400;
+  color: #64748b;
+  font-size: 0.85rem;
+  margin-left: 6px;
+}
+
+.legend-amount {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #334155;
+}

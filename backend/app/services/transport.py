@@ -76,12 +76,22 @@ class TransportService:
                 recommended_mode = TransportMode.GRAB
                 alternative_mode = TransportMode.MOPED_TUKTUK
                 price_min, price_max = distance_km * 15, distance_km * 25
-                instruction = "该区域公共交通不便，建议使用 Grab 呼叫车辆。"
+                instruction = "该区域公共交通不便，建议通过打车软件呼叫车辆。"
         else: # > 5km
             recommended_mode = TransportMode.GRAB
             alternative_mode = TransportMode.CHARTER
             price_min, price_max = distance_km * 12, distance_km * 22
-            instruction = "行程距离较长，建议使用 Grab 呼叫车辆。"
+            instruction = "行程距离较长，建议使用打车软件（如滴滴或 Grab）呼叫车辆。"
+
+        # 3. Determine currency based on coordinates (rough check for China)
+        currency = "THB"
+        if origin_coords:
+            try:
+                lat, _ = map(float, origin_coords.split(','))
+                if 18.0 < lat < 54.0: # Broad range for China vs Thailand (approx 5-20)
+                    currency = "CNY"
+            except:
+                pass
 
         return TransportSegment(
             origin=origin,
@@ -94,10 +104,10 @@ class TransportService:
             alternative_mode=alternative_mode,
             price_estimate_min=round(price_min, 0),
             price_estimate_max=round(price_max, 0),
-            currency="THB",
+            currency=currency,
             reliability_level=reliability,
             instruction=instruction,
-            warning="以实际 App 显示为准，受时段/路况影响"
+            warning="以实际 App 显示为准，建议使用高德或百度地图确认" if currency == "CNY" else "以实际 App 显示为准，受时段/路况影响"
         )
 
     def plan_daily_transport(
@@ -141,10 +151,13 @@ class TransportService:
             total_min += segment.price_estimate_min
             total_max += segment.price_estimate_max
 
+        # Determine currency for the plan
+        currency = segments[0].currency if segments else "THB"
+
         return DailyTransportPlan(
             day_number=day_number,
             segments=segments,
             total_estimated_cost_min=total_min,
             total_estimated_cost_max=total_max,
-            currency="THB"
+            currency=currency
         )

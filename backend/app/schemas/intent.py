@@ -85,3 +85,8 @@ class IntentParseResult(BaseModel):
     updated_intent: ConstraintObject
     requires_clarification: bool = Field(False, description="是否需要进一步澄清/追问")
     clarification_message: Optional[str] = Field(None, description="给用户的追问或提示信息")
+
+class IntentParseRequest(BaseModel):
+    """意图解析请求体"""
+    user_text: str = Field(..., description="用户的自然语言输入")
+    current_intent: Optional[ConstraintObject] = Field(None, description="当前的意图状态，如果是首轮则为 null")

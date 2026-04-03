@@ -1,0 +1,147 @@
+.step-card {
+  background: var(--bg-card, #ffffff);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
+  overflow: hidden;
+  border: 1px solid #eef2f6;
+  transition: all 0.3s ease;
+}
+
+.step-card.confirmed {
+  border-left: 4px solid #10b981;
+}
+
+.step-card.pending {
+  border-left: 4px solid #ef4444;
+}
+
+.step-card.isGenerating {
+  border-left: 4px solid #3b82f6;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.step-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #f8fafc;
+}
+
+.step-card-title-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.step-card-title-area h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.status-badge {
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.status-badge.pending {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.status-badge.confirmed {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.status-badge.generating {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.data-source-badge {
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.data-source-badge.realtime {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.data-source-badge.knowledge {
+  background: #fdf4ff;
+  color: #c026d3;
+}
+
+.data-source-badge.model {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.data-source-badge.default {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.step-card-content {
+  padding: 24px;
+}
+
+.step-card-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  background: #f8fafc;
+  border-top: 1px solid #f1f5f9;
+}
+
+.step-card-footer button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.btn-regenerate {
+  background: #fff;
+  color: #475569;
+  border: 1px solid #cbd5e1 !important;
+}
+
+.btn-regenerate:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.btn-confirm {
+  background: #3b82f6;
+  color: #fff;
+}
+
+.btn-confirm:hover {
+  background: #2563eb;
+}
+
+.btn-confirm:disabled, .btn-regenerate:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

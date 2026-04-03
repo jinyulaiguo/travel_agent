@@ -1,0 +1,155 @@
+.export-panel {
+  max-width: 600px;
+  margin: 40px auto;
+  padding: 40px;
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+  border-radius: 24px;
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+  text-align: center;
+}
+
+.export-header {
+  margin-bottom: 32px;
+}
+
+.success-icon {
+  color: #10b981;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.export-header h2 {
+  font-size: 1.8rem;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.export-desc {
+  color: #64748b;
+  font-size: 1rem;
+}
+
+.export-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.export-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.export-btn.primary {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+
+.export-btn.primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
+}
+
+.export-btn.secondary {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.export-btn.secondary:hover {
+  background: #e2e8f0;
+}
+
+.export-btn.outline {
+  background: transparent;
+  color: #64748b;
+  border: 2px solid #e2e8f0;
+}
+
+.export-btn.outline:hover {
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+.export-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Share Dialog */
+.share-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.share-dialog {
+  background: white;
+  padding: 32px;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.share-dialog h3 {
+  margin-top: 0;
+  color: #0f172a;
+  font-size: 1.25rem;
+  margin-bottom: 8px;
+}
+
+.dialog-desc {
+  color: #64748b;
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+}
+
+.share-link-box {
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 20px;
+  overflow-x: auto;
+}
+
+.share-link-box code {
+  color: #3b82f6;
+  font-family: ui-monospace, monospace;
+}
+
+.copy-btn {
+  width: 100%;
+  padding: 12px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.copy-btn:hover {
+  background: #2563eb;
+}

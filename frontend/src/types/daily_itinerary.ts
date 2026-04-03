@@ -13,6 +13,7 @@ export interface DailyItineraryItem {
   planned_start_time: string;
   planned_end_time: string;
   duration_hours: number;
+  coordinates?: Coordinates;
   notes?: string;
   confidence_level?: ConfidenceLevelType;
 }

@@ -10,13 +10,6 @@ export interface NodeState {
     compatibilityWarning?: string;
 }
 
-export interface SSEEvent {
-    type: string;
-    node: string;
-    status: NodeStatus;
-    data?: any;
-}
-
 export interface IntentState {
     rawInput: string;
     parsing: boolean;
@@ -24,28 +17,51 @@ export interface IntentState {
     confirmed: boolean;
 }
 
+export type StepStatus = "pending" | "isGenerating" | "confirmed";
+
 interface PlanningStore {
     sessionId: string | null;
     userId: string;
     nodes: Record<string, NodeState>;
     intent: IntentState;
-    isPlanning: boolean;
-    // actions
+    
+    // HIL Steps Management
+    currentStep: number;
+    stepStatus: Record<string, StepStatus>;
+    
+    // Actions
     initSession: (sessionId: string, userId: string, initialState: Record<string, NodeState>) => void;
-    updateNodeFromSSE: (event: SSEEvent) => void;
     fetchState: (sessionId: string, userId: string) => Promise<void>;
     confirmNode: (nodeKey: string, data: any) => Promise<void>;
     lockNode: (nodeKey: string) => Promise<void>;
     unlockNode: (nodeKey: string) => Promise<void>;
-    batchConfirm: () => Promise<void>;
     rollback: (nodeKey: string) => Promise<void>;
-    // New actions
+    
+    // Intent Actions
     parseIntent: (text: string) => Promise<void>;
     confirmIntent: () => Promise<void>;
-    triggerPlanning: () => Promise<void>;
+    setIntentResult: (result: any) => void;
+    
+    // HIL Specific Actions
+    generateStep: (stepKey: string, endpoint: string, method?: string, body?: any) => Promise<any>;
+    confirmStep: (stepKey: string, endpoint: string, body?: any) => Promise<any>;
+    setStepStatus: (stepKey: string, status: StepStatus) => void;
+    advanceStep: () => void;
+    jumpToStep: (step: number) => void;
 }
 
-const API_BASE = "http://localhost:8000/api/v1/state";
+const API_BASE = "http://localhost:8000/api/v1";
+
+export const STEP_KEYS = [
+  "intent", 
+  "flight", 
+  "destination",
+  "attraction", 
+  "hotel", 
+  "cost", 
+  "schedule", 
+  "export"
+];
 
 export const usePlanningStore = create<PlanningStore>((set, get) => ({
     sessionId: null,
@@ -57,26 +73,27 @@ export const usePlanningStore = create<PlanningStore>((set, get) => ({
         result: null,
         confirmed: false
     },
-    isPlanning: false,
+    
+    currentStep: 0,
+    stepStatus: {
+        intent: "pending",
+        flight: "pending",
+        destination: "pending",
+        attraction: "pending",
+        hotel: "pending",
+        cost: "pending",
+        schedule: "pending",
+        export: "pending",
+    },
+
     initSession: (sessionId: string, userId: string, initialState: Record<string, NodeState>) => 
         set({ sessionId, userId, nodes: initialState }),
-    
-    updateNodeFromSSE: (event: SSEEvent) => set((state: PlanningStore) => ({
-        nodes: {
-            ...state.nodes, [event.node]: {
-                ...state.nodes[event.node],
-                status: event.status,
-                data: event.data ?? state.nodes[event.node]?.data,
-                locked: state.nodes[event.node]?.locked ?? false
-            }
-        }
-    })),
 
     fetchState: async (sessionId: string, userId: string) => {
-        const res = await fetch(`${API_BASE}/${sessionId}?user_id=${userId}`);
+        const res = await fetch(`${API_BASE}/state/${sessionId}?user_id=${userId}`);
         const data = await res.json();
         const newNodes: Record<string, NodeState> = {};
-        Object.entries(data.nodes).forEach(([key, val]: [string, any]) => {
+        Object.entries(data.nodes || {}).forEach(([key, val]: [string, any]) => {
             newNodes[key] = {
                 status: val.status,
                 data: val.data,
@@ -89,7 +106,7 @@ export const usePlanningStore = create<PlanningStore>((set, get) => ({
 
     confirmNode: async (nodeKey: string, data: any) => {
         const { sessionId, userId } = get();
-        await fetch(`${API_BASE}/${sessionId}/nodes/${nodeKey}/confirm?user_id=${userId}`, {
+        await fetch(`${API_BASE}/state/${sessionId}/nodes/${nodeKey}/confirm?user_id=${userId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
@@ -98,7 +115,7 @@ export const usePlanningStore = create<PlanningStore>((set, get) => ({
 
     lockNode: async (nodeKey: string) => {
         const { sessionId, userId } = get();
-        await fetch(`${API_BASE}/${sessionId}/nodes/${nodeKey}/lock?user_id=${userId}`, {
+        await fetch(`${API_BASE}/state/${sessionId}/nodes/${nodeKey}/lock?user_id=${userId}`, {
             method: 'POST'
         });
         set((state: PlanningStore) => ({
@@ -110,7 +127,7 @@ export const usePlanningStore = create<PlanningStore>((set, get) => ({
 
     unlockNode: async (nodeKey: string) => {
         const { sessionId, userId } = get();
-        await fetch(`${API_BASE}/${sessionId}/nodes/${nodeKey}/unlock?user_id=${userId}`, {
+        await fetch(`${API_BASE}/state/${sessionId}/nodes/${nodeKey}/unlock?user_id=${userId}`, {
             method: 'POST'
         });
         set((state: PlanningStore) => ({
@@ -120,83 +137,120 @@ export const usePlanningStore = create<PlanningStore>((set, get) => ({
         }));
     },
 
-    batchConfirm: async () => {
-        const { sessionId, userId } = get();
-        await fetch(`${API_BASE}/${sessionId}/batch-confirm?user_id=${userId}`, {
-            method: 'POST'
-        });
-    },
-
     rollback: async (nodeKey: string) => {
         const { sessionId, userId } = get();
-        await fetch(`${API_BASE}/${sessionId}/nodes/${nodeKey}/rollback?user_id=${userId}`, {
+        await fetch(`${API_BASE}/state/${sessionId}/nodes/${nodeKey}/rollback?user_id=${userId}`, {
             method: 'POST'
         });
     },
 
     parseIntent: async (text: string) => {
         set({ intent: { ...get().intent, parsing: true, rawInput: text } });
+        get().setStepStatus("intent", "isGenerating");
         try {
-            const res = await fetch(`http://localhost:8000/intent/parse?user_text=${encodeURIComponent(text)}`, {
+            const res = await fetch(`${API_BASE}/intent/parse`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(get().intent.result?.updated_intent || null)
+                body: JSON.stringify({
+                    user_text: text,
+                    current_intent: get().intent.result?.updated_intent || null
+                })
             });
             const result = await res.json();
             set({ intent: { ...get().intent, parsing: false, result } });
+            get().setStepStatus("intent", "pending"); // ready to confirm
             if (result.updated_intent?.session_id) {
                 set({ sessionId: result.updated_intent.session_id });
             }
         } catch (error) {
             set({ intent: { ...get().intent, parsing: false } });
+            get().setStepStatus("intent", "pending");
             console.error("Failed to parse intent:", error);
         }
+    },
+
+    setIntentResult: (result: any) => {
+        set({ intent: { ...get().intent, result } });
     },
 
     confirmIntent: async () => {
         const { intent } = get();
         if (!intent.result?.updated_intent) return;
         
+        get().setStepStatus("intent", "isGenerating");
         try {
-            const res = await fetch(`http://localhost:8000/intent/confirm`, {
+            const res = await fetch(`${API_BASE}/intent/confirm`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(intent.result.updated_intent)
             });
             const confirmedIntent = await res.json();
             set({ intent: { ...intent, result: { ...intent.result, updated_intent: confirmedIntent }, confirmed: true } });
+            get().setStepStatus("intent", "confirmed");
+            get().advanceStep();
         } catch (error) {
+            get().setStepStatus("intent", "pending");
             console.error("Failed to confirm intent:", error);
         }
     },
 
-    triggerPlanning: async () => {
-        const { sessionId, userId, isPlanning } = get();
-        if (!sessionId || isPlanning) return;
-
-        // Reset nodes for fresh generation
-        set({ nodes: {}, isPlanning: true });
-
-        const eventSource = new EventSource(`http://localhost:8000/api/v1/planner/session/${sessionId}/run?user_id=${userId}`);
-        
-        eventSource.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            if (data.type === 'node_status_change' || data.type === 'node_data_ready') {
-                get().updateNodeFromSSE({
-                    type: data.type,
-                    node: data.node,
-                    status: data.status || (data.type === 'node_data_ready' ? 'generated' : 'pending'),
-                    data: data.data
-                });
-            } else if (data.type === 'planning_complete') {
-                set({ isPlanning: false });
-                eventSource.close();
+    generateStep: async (stepKey: string, endpoint: string, method: string = 'POST', body?: any) => {
+        get().setStepStatus(stepKey, "isGenerating");
+        try {
+            const res = await fetch(`${API_BASE}${endpoint}`, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: body ? JSON.stringify(body) : undefined
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.detail || `Failed to generate ${stepKey}`);
             }
-        };
+            get().setStepStatus(stepKey, "pending");
+            return data;
+        } catch (error) {
+            get().setStepStatus(stepKey, "pending");
+            console.error(`Failed to generate ${stepKey}:`, error);
+            throw error;
+        }
+    },
 
-        eventSource.onerror = () => {
-            set({ isPlanning: false });
-            eventSource.close();
-        };
+    confirmStep: async (stepKey: string, endpoint: string, body?: any) => {
+        get().setStepStatus(stepKey, "isGenerating");
+        try {
+            const res = await fetch(`${API_BASE}${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: body ? JSON.stringify(body) : undefined
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.detail || `Failed to confirm ${stepKey}`);
+            }
+            get().setStepStatus(stepKey, "confirmed");
+            get().advanceStep();
+            return data;
+        } catch (error) {
+            get().setStepStatus(stepKey, "pending");
+            console.error(`Failed to confirm ${stepKey}:`, error);
+            throw error;
+        }
+    },
+
+    setStepStatus: (stepKey: string, status: StepStatus) => {
+        set((state) => ({
+            stepStatus: { ...state.stepStatus, [stepKey]: status }
+        }));
+    },
+
+    advanceStep: () => {
+        const { currentStep } = get();
+        if (currentStep < STEP_KEYS.length - 1) {
+            set({ currentStep: currentStep + 1 });
+        }
+    },
+
+    jumpToStep: (step: number) => {
+        set({ currentStep: step });
     }
 }));

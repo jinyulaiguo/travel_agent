@@ -202,3 +202,58 @@
   color: var(--text);
   line-height: 1.5;
 }
+
+/* Map Styles */
+.map-route-card {
+  margin-bottom: 24px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  height: 300px;
+}
+
+.map-placeholder {
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--code-bg);
+  border: 2px dashed var(--border);
+  border-radius: 16px;
+  color: var(--text);
+  margin-bottom: 24px;
+  font-size: 14px;
+}
+
+.map-popup {
+  font-family: inherit;
+}
+
+.map-popup strong {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 4px;
+  color: var(--accent);
+}
+
+.map-popup p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text);
+}
+
+/* Global Leaflet Overrides */
+.leaflet-container {
+  font-family: inherit;
+  z-index: 1;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  padding: 4px;
+}
+
+.leaflet-popup-tip-container {
+  display: none;
+}
